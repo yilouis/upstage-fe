@@ -120,6 +120,7 @@ export default function AddServiceModal({ onClose }) {
         setSelectedService({
           id: response.id,
           name: response.service_name,
+          vendor_slug: response.vendor_slug || null,
           category: response.domain || "미분류",
           sector: "전체",
           expiry: new Date().toISOString().split("T")[0],

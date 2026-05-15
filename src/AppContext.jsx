@@ -81,6 +81,7 @@ export const AppProvider = ({ children }) => {
       const catalogItems = terms.map(term => ({
         id: term.id,
         name: term.service_name,
+        vendor_slug: term.vendor_slug || null,
         category: term.domain || "미분류",
         sector: "전체",
         expiry: term.subscribed_at || "미상",

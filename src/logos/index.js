@@ -66,8 +66,8 @@ const normalize = (raw) =>
 export function getServiceLogo(service) {
   if (!service) return null;
 
-  // Prefer backend-provided slug when available
-  const slug = service.service_slug || service.slug;
+  // Prefer backend-provided vendor_slug when available
+  const slug = service.vendor_slug || service.service_slug || service.slug;
   if (slug && SERVICE_LOGOS[slug]) return SERVICE_LOGOS[slug];
 
   // Fall back to name-based lookup (for legacy data)
