@@ -418,7 +418,7 @@ export default function SearchTab() {
                       aria-expanded={showSummary}
                       aria-label={showSummary ? "약관 요약 접기" : "약관 요약 펼치기"}
                     >
-                      <p className="text-xs font-bold text-yellow-700">📋 약관 요약</p>
+                      <span className="text-xs font-bold text-yellow-700">📋 약관 요약</span>
                       {showSummary ? (
                         <ChevronUp className="w-4 h-4 text-yellow-700" />
                       ) : (
@@ -439,7 +439,7 @@ export default function SearchTab() {
                       aria-expanded={showDiffSummary}
                       aria-label={showDiffSummary ? "이전 버전 대비 변경사항 접기" : "이전 버전 대비 변경사항 펼치기"}
                     >
-                      <p className="text-xs font-bold text-orange-700">🔄 이전 버전 대비 변경사항</p>
+                      <span className="text-xs font-bold text-orange-700">🔄 이전 버전 대비 변경사항</span>
                       {showDiffSummary ? (
                         <ChevronUp className="w-4 h-4 text-orange-700" />
                       ) : (
@@ -691,9 +691,9 @@ export default function SearchTab() {
                 aria-expanded={showSuggestions}
                 aria-label={showSuggestions ? "추천 질문 접기" : "추천 질문 펼치기"}
               >
-                <p className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 transition">
+                <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 transition">
                   이런 질문을 할 수 있어요
-                </p>
+                </span>
                 {showSuggestions ? (
                   <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition" />
                 ) : (
