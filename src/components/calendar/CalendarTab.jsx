@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "../../AppContext";
-import { CalendarDays, Pencil } from "lucide-react";
+import { CalendarDays, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { deriveMockEvents, EVENT_KIND_STYLES } from "../../lib/billing";
 import BillingEditModal from "./BillingEditModal";
+
+const pad = (n) => String(n).padStart(2, "0");
+const monthKey = (year, month) => `${year}-${pad(month + 1)}`;
 
 export default function CalendarTab() {
   const {
@@ -12,8 +15,14 @@ export default function CalendarTab() {
     billing,
     updateBilling,
   } = useApp();
-  const [currentMonthStr, setCurrentMonthStr] = useState("2026-05");
+  const todayRef = useMemo(() => new Date(), []);
+  const [cursor, setCursor] = useState(() => ({
+    year: todayRef.getFullYear(),
+    month: todayRef.getMonth(),
+  }));
   const [editingServiceId, setEditingServiceId] = useState(null);
+
+  const currentMonthStr = monthKey(cursor.year, cursor.month);
 
   useEffect(() => {
     fetchCalendar(currentMonthStr);
@@ -24,20 +33,40 @@ export default function CalendarTab() {
     [services, billing],
   );
 
-  // Backend events first (real), then mock — both contribute dots/cards.
   const allEvents = useMemo(
     () => [...calendarEvents, ...mockEvents],
     [calendarEvents, mockEvents],
   );
 
-  // 달력 데이터 생성 (간단하게 현재 선택된 달의 일수를 31로 고정하여 보여주되, 실제론 Date 로직 필요)
-  // Demo purpose: 2026년 5월 고정 (실무에선 날짜 라이브러리 사용 권장)
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const daysInMonth = new Date(cursor.year, cursor.month + 1, 0).getDate();
+  const firstWeekday = new Date(cursor.year, cursor.month, 1).getDay();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
+  const goPrevMonth = () => {
+    setCursor((c) => {
+      const d = new Date(c.year, c.month - 1, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  };
+  const goNextMonth = () => {
+    setCursor((c) => {
+      const d = new Date(c.year, c.month + 1, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  };
+  const goToday = () => {
+    const t = new Date();
+    setCursor({ year: t.getFullYear(), month: t.getMonth() });
+  };
+
+  const isCurrentMonth =
+    cursor.year === todayRef.getFullYear() &&
+    cursor.month === todayRef.getMonth();
+  const todayDay = todayRef.getDate();
+
   const getEventsForDay = (day) => {
-    const dayStr = day.toString().padStart(2, "0");
-    const targetDate = `${currentMonthStr}-${dayStr}`;
+    const targetDate = `${currentMonthStr}-${pad(day)}`;
     return allEvents.filter((e) => e.event_date === targetDate);
   };
 
@@ -62,16 +91,32 @@ export default function CalendarTab() {
             구독 시작일과 정기 결제일을 한눈에 확인하세요.
           </p>
         </div>
-        <div className="flex gap-2 bg-white p-1 rounded-xl border border-gray-200">
-          <button className="px-4 py-2 text-sm font-semibold bg-gray-800 text-white rounded-lg shadow-sm">
-            May 2026
-          </button>
+        <div className="flex items-center gap-2">
           <button
-            className="px-4 py-2 text-sm font-semibold text-gray-400 hover:bg-gray-50 rounded-lg transition"
-            onClick={() => alert("해당 월은 아직 지원하지 않습니다.")}
+            onClick={goToday}
+            className="px-3 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
           >
-            Jun
+            오늘
           </button>
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-1 py-1">
+            <button
+              onClick={goPrevMonth}
+              aria-label="이전 달"
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-50 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-3 text-sm font-bold text-gray-800 min-w-[110px] text-center tabular-nums">
+              {cursor.year}년 {cursor.month + 1}월
+            </span>
+            <button
+              onClick={goNextMonth}
+              aria-label="다음 달"
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-50 transition"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -92,8 +137,7 @@ export default function CalendarTab() {
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-4">
-            {/* 2026년 5월 1일은 금요일 시작이므로 앞에 빈 칸 5개 추가 */}
-            {Array(5)
+            {Array(firstWeekday)
               .fill(null)
               .map((_, i) => (
                 <div key={`empty-${i}`} />
@@ -101,6 +145,7 @@ export default function CalendarTab() {
             {days.map((day) => {
               const dayEvents = getEventsForDay(day);
               const hasEvent = dayEvents.length > 0;
+              const isToday = isCurrentMonth && day === todayDay;
 
               return (
                 <div
@@ -109,7 +154,11 @@ export default function CalendarTab() {
                 >
                   <span
                     className={`text-sm font-medium ${
-                      hasEvent ? "text-blue-600 font-bold" : "text-gray-700"
+                      isToday
+                        ? "w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-full font-bold"
+                        : hasEvent
+                          ? "text-blue-600 font-bold"
+                          : "text-gray-700"
                     }`}
                   >
                     {day}
