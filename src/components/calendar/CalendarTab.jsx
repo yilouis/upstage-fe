@@ -77,7 +77,8 @@ export default function CalendarTab() {
 
       <div className="grid grid-cols-12 gap-8 flex-1 min-h-0">
         {/* 캘린더 그리드 (왼쪽 8칸) */}
-        <div className="col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 toss-shadow overflow-y-auto">
+        <div className="col-span-8 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto p-8 pb-4">
           <div className="grid grid-cols-7 mb-4">
             {weekDays.map((d) => (
               <div
@@ -136,16 +137,21 @@ export default function CalendarTab() {
             })}
           </div>
 
-          {/* 범례 */}
-          <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-4 text-[11px] text-gray-500">
+          </div>
+
+          {/* 범례 (카드 하단 고정) */}
+          <div className="shrink-0 border-t border-gray-100 px-8 py-3 bg-gray-50 flex items-center justify-center gap-5 text-xs font-medium text-gray-600">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-gray-400" /> 구독 시작
+              <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+              <span>구독 시작</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-300" /> 지난 결제
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
+              <span>지난 결제</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-600" /> 다음 결제
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+              <span>다음 결제</span>
             </div>
           </div>
         </div>
