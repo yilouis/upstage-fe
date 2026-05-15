@@ -108,21 +108,35 @@ export default function SearchTab() {
 
   const versions = getTermsVersions();
   const currentTermsVersion = versions[selectedVersionIndex] || null;
-  const riskyDisputeClauses = disputeClauses.filter(
-    (clause) =>
-      clause?.clause_risk_level ||
-      clause?.risk_reasoning ||
-      clause?.user_action ||
-      (clause?.matches && clause.matches.length > 0),
-  );
+
+  const getRiskRank = (riskLevel) => {
+    const normalized = (riskLevel || "").toLowerCase();
+    if (normalized.includes("high") || normalized.includes("높")) return 0;
+    if (normalized.includes("medium") || normalized.includes("중")) return 1;
+    if (normalized.includes("low") || normalized.includes("낮")) return 2;
+    return 3;
+  };
+
+  const riskyDisputeClauses = disputeClauses
+    .filter(
+      (clause) =>
+        clause?.clause_risk_level ||
+        clause?.risk_reasoning ||
+        clause?.user_action ||
+        (clause?.matches && clause.matches.length > 0),
+    )
+    .sort(
+      (a, b) =>
+        getRiskRank(a.clause_risk_level) - getRiskRank(b.clause_risk_level),
+    );
 
   const getRiskBadgeClass = (riskLevel) => {
     const normalized = (riskLevel || "").toLowerCase();
     if (normalized.includes("high") || normalized.includes("높")) {
-      return "bg-red-50 text-red-600 border-red-100";
+      return "bg-red-600 text-white border-red-600";
     }
     if (normalized.includes("medium") || normalized.includes("중")) {
-      return "bg-orange-50 text-orange-600 border-orange-100";
+      return "bg-amber-100 text-amber-700 border-amber-200";
     }
     if (normalized.includes("low") || normalized.includes("낮")) {
       return "bg-blue-50 text-blue-600 border-blue-100";
