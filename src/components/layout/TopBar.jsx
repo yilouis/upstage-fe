@@ -14,6 +14,8 @@ export default function TopBar() {
     services,
     setSelectedService,
     setSelectedVersionIndex,
+    setSelectedCategory,
+    setSelectedSector,
   } = useApp();
 
   const [userOpen, setUserOpen] = useState(false);
@@ -40,7 +42,11 @@ export default function TopBar() {
         </button>
         <div
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => setView("dashboard")}
+          onClick={() => {
+            setSelectedCategory("");
+            setSelectedSector("전체");
+            setView("dashboard");
+          }}
         >
           <img src={logoImage} alt="T-T 로고" className="w-10 h-10" />
           <span className="font-bold text-xl tracking-tight text-gray-800">

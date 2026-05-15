@@ -22,7 +22,7 @@ export default function DashboardTab() {
 
   const currentServices = services.filter(
     (s) =>
-      s.category === selectedCategory &&
+      (!selectedCategory || s.category === selectedCategory) &&
       (selectedSector === "전체" || s.sector === selectedSector),
   );
 

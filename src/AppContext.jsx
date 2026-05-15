@@ -114,9 +114,6 @@ export const AppProvider = ({ children }) => {
       );
 
       setCategories(newCategories);
-      if (newCategories.length > 0 && !selectedCategory) {
-        setSelectedCategory(newCategories[0].id);
-      }
     } catch (error) {
       console.error("Failed to fetch catalog:", error);
     }
