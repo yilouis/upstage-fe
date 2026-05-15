@@ -127,7 +127,10 @@ export default function CalendarTab() {
       <div className="grid grid-cols-12 gap-8 flex-1 min-h-0">
         {/* 캘린더 그리드 (왼쪽 8칸) */}
         <div className="col-span-8 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto p-8 pb-4">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto p-8 pb-4"
+            style={{ scrollbarGutter: "stable" }}
+          >
           <div className="grid grid-cols-7 mb-4">
             {weekDays.map((d) => (
               <div
@@ -210,7 +213,10 @@ export default function CalendarTab() {
           <h3 className="text-lg font-bold text-gray-900 ml-1 mb-4 shrink-0">
             {cursor.month + 1}월 일정
           </h3>
-          <div className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0">
+          <div
+            className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0"
+            style={{ scrollbarGutter: "stable" }}
+          >
             {upcoming.map((evt) => {
               const service = services.find((s) => s.id === evt.term_id);
               const style = EVENT_KIND_STYLES[evt.kind] || {
