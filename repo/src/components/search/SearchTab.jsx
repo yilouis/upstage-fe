@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useApp } from "../../AppContext";
 import { Sparkles } from "lucide-react";
 import { api } from "../../lib/api";
+import { DEFAULT_USER_ID } from "../../config";
 
 export default function SearchTab() {
   const {
@@ -18,6 +19,7 @@ export default function SearchTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [isTermLoading, setIsTermLoading] = useState(false);
   const chatEndRef = useRef(null);
+  const [chatSessionId, setChatSessionId] = useState(null);
 
   const [selectedText, setSelectedText] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
@@ -46,6 +48,7 @@ export default function SearchTab() {
     setNewMessage("");
     setShowTooltip(false);
     setSelectedVersionIndex(0);
+    setChatSessionId(null);
   }, [selectedService?.id, setSelectedVersionIndex]);
 
   useEffect(() => {
@@ -157,20 +160,47 @@ export default function SearchTab() {
     setIsLoading(true);
 
     try {
-      // 1차: 서버 검색 API 시도
+      // 1차: Chat API (세션 기반 답변)
       let answer = null;
       try {
-        const res = await api.searchTerm({ termId: selectedService.id, query: textToSend, topK: 3 });
-        if (res.results && res.results.length > 0) {
-          answer = res.results.map((chunk, i) => 
-            `📄 관련 조항 ${i + 1}:\n${chunk.content}`
-          ).join('\n\n---\n\n');
+        const chatRes = await api.chat({
+          userId: DEFAULT_USER_ID,
+          termId: selectedService.id,
+          sessionId: chatSessionId,
+          message: textToSend,
+        });
+        if (chatRes?.session_id) {
+          setChatSessionId(chatRes.session_id);
         }
-      } catch (serverErr) {
-        console.warn("Server search failed, falling back to local search:", serverErr.message);
+        if (chatRes?.answer) {
+          answer = chatRes.answer;
+        }
+      } catch (chatErr) {
+        console.warn("Chat API failed, falling back to search:", chatErr.message);
       }
 
-      // 2차: 서버 실패 시 로컬 검색 fallback
+      // 2차: 서버 검색 API 시도
+      if (!answer) {
+        try {
+          const res = await api.searchTerm({
+            termId: selectedService.id,
+            query: textToSend,
+            topK: 3,
+          });
+          if (res.results && res.results.length > 0) {
+            answer = res.results
+              .map((chunk, i) => `📄 관련 조항 ${i + 1}:\n${chunk.content}`)
+              .join("\n\n---\n\n");
+          }
+        } catch (serverErr) {
+          console.warn(
+            "Server search failed, falling back to local search:",
+            serverErr.message,
+          );
+        }
+      }
+
+      // 3차: 서버 실패 시 로컬 검색 fallback
       if (!answer) {
         answer = localSearch(textToSend);
       }

@@ -9,6 +9,7 @@ export default function TopBar() {
     setSidebarOpen,
     notifications,
     deleteNotification,
+    markAllNotificationsRead,
     services,
     setSelectedService,
     setSelectedVersionIndex,
@@ -93,9 +94,7 @@ export default function TopBar() {
                 <div className="flex items-center gap-4">
                   {notifications.length > 0 && (
                     <button
-                      onClick={() =>
-                        notifications.forEach((n) => deleteNotification(n.id))
-                      }
+                      onClick={markAllNotificationsRead}
                       className="text-sm text-gray-400 hover:text-red-500 font-medium transition"
                     >
                       전체 삭제

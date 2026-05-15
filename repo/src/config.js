@@ -1,7 +1,12 @@
 const envApi = import.meta.env.VITE_API_BASE_URL;
 const envUserId = import.meta.env.VITE_USER_ID;
 
-export const API_BASE_URL = envApi?.trim() || "/api";
+const DEFAULT_REMOTE_API = "https://upstageaidemo-production.up.railway.app";
+const envApiBaseUrl = envApi?.trim();
+const shouldUseProxy =
+  !envApiBaseUrl || envApiBaseUrl === DEFAULT_REMOTE_API;
+
+export const API_BASE_URL = shouldUseProxy ? "/api" : envApiBaseUrl;
 export const DEFAULT_USER_ID =
   envUserId?.trim() || "00000000-0000-0000-0000-000000000001";
 

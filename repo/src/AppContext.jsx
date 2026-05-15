@@ -93,8 +93,22 @@ export const AppProvider = ({ children }) => {
   // 알림 fetch
   const fetchNotifications = useCallback(async () => {
     try {
-      const notiRes = await api.getNotifications({ userId: DEFAULT_USER_ID, status: "UNREAD" });
-      setNotifications(notiRes.notifications || []);
+      const notiRes = await api.getNotifications({
+        userId: DEFAULT_USER_ID,
+        status: "UNREAD",
+      });
+      const mapped = (notiRes.notifications || []).map((noti) => ({
+        id: noti.id,
+        serviceId: noti.term_id,
+        title: noti.title,
+        summary: noti.diff_summary || "약관 변경 사항이 있습니다.",
+        date: noti.created_at
+          ? new Date(noti.created_at).toISOString().split("T")[0]
+          : "",
+        status: noti.status,
+        versionId: noti.version_id ?? null,
+      }));
+      setNotifications(mapped);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     }
@@ -162,10 +176,22 @@ export const AppProvider = ({ children }) => {
 
   const deleteNotification = async (id) => {
     try {
-      await api.markNotificationRead({ notificationId: id, userId: DEFAULT_USER_ID });
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      await api.deleteNotification({
+        notificationId: id,
+        userId: DEFAULT_USER_ID,
+      });
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (error) {
-      console.error("Failed to mark notification as read", error);
+      console.error("Failed to delete notification", error);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.markAllNotificationsRead({ userId: DEFAULT_USER_ID });
+      setNotifications([]);
+    } catch (error) {
+      console.error("Failed to mark all notifications as read", error);
     }
   };
 
@@ -197,7 +223,7 @@ export const AppProvider = ({ children }) => {
         addCategory,
         sidebarOpen, setSidebarOpen,
         selectedVersionIndex, setSelectedVersionIndex,
-        notifications, deleteNotification,
+        notifications, deleteNotification, markAllNotificationsRead,
         calendarEvents, fetchCalendar,
       }}
     >

@@ -1,14 +1,21 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useApp } from "../../AppContext";
 import { X, CheckCircle2, Upload, Link, Search } from "lucide-react";
 
 export default function AddServiceModal({ onClose }) {
-  const { addService, catalog, subscribedIds, subscribeService, setSelectedService, setView } = useApp();
-  
+  const {
+    addService,
+    catalog,
+    subscribedIds,
+    subscribeService,
+    setSelectedService,
+    setView,
+  } = useApp();
+
   // 카탈로그(DB 전체)에서 서비스 이름 → 서비스 객체 매핑
   const catalogMap = useMemo(() => {
     const map = new Map();
-    catalog.forEach(s => {
+    catalog.forEach((s) => {
       if (!map.has(s.name)) {
         map.set(s.name, s);
       }
@@ -17,7 +24,7 @@ export default function AddServiceModal({ onClose }) {
   }, [catalog]);
 
   const catalogNames = useMemo(() => [...catalogMap.keys()], [catalogMap]);
-  
+
   const [serviceName, setServiceName] = useState("");
   const [serviceUrl, setServiceUrl] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -29,10 +36,12 @@ export default function AddServiceModal({ onClose }) {
 
   const selectedCatalogItem = catalogMap.get(serviceName);
   const isInCatalog = !!selectedCatalogItem;
-  const isAlreadySubscribed = selectedCatalogItem && subscribedIds.includes(selectedCatalogItem.id);
+  const isAlreadySubscribed =
+    selectedCatalogItem && subscribedIds.includes(selectedCatalogItem.id);
   const hasUrl = serviceUrl.trim().length > 0;
   const hasFile = fileObj !== null;
-  const canRegisterNew = serviceName.trim().length > 0 && !isInCatalog && (hasUrl || hasFile);
+  const canRegisterNew =
+    serviceName.trim().length > 0 && !isInCatalog && (hasUrl || hasFile);
 
   const handleServiceInput = (value) => {
     setServiceName(value);
@@ -47,6 +56,19 @@ export default function AddServiceModal({ onClose }) {
       setShowSuggestions(false);
     }
   };
+
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const query = serviceName.trim();
+    if (query.length === 0) {
+      setSuggestions(catalogNames);
+      return;
+    }
+    const filtered = catalogNames.filter((name) =>
+      name.toLowerCase().includes(query.toLowerCase()),
+    );
+    setSuggestions(filtered);
+  }, [catalogNames, serviceName, showSuggestions]);
 
   const handleSelectService = (name) => {
     setServiceName(name);
@@ -81,13 +103,15 @@ export default function AddServiceModal({ onClose }) {
       let fileToSend = fileObj;
       if (!fileToSend && hasUrl) {
         const urlContent = `Service: ${serviceName}\nURL: ${serviceUrl}\n`;
-        fileToSend = new File([urlContent], "url_placeholder.pdf", { type: "application/pdf" });
+        fileToSend = new File([urlContent], "url_placeholder.pdf", {
+          type: "application/pdf",
+        });
       }
 
       const response = await addService({
         serviceName,
         file: fileToSend,
-        subscribedAt: new Date().toISOString().split('T')[0]
+        subscribedAt: new Date().toISOString().split("T")[0],
       });
 
       if (response?.id) {
@@ -96,7 +120,7 @@ export default function AddServiceModal({ onClose }) {
           name: response.service_name,
           category: response.domain || "미분류",
           sector: "전체",
-          expiry: new Date().toISOString().split('T')[0],
+          expiry: new Date().toISOString().split("T")[0],
           status: response.status,
         });
         setView("search");
@@ -122,9 +146,7 @@ export default function AddServiceModal({ onClose }) {
         <button onClick={onClose} className="absolute top-6 right-6">
           <X className="w-6 h-6 text-gray-400" />
         </button>
-        <h2 className="text-2xl font-bold mb-6">
-          어떤 약관을 확인할까요?
-        </h2>
+        <h2 className="text-2xl font-bold mb-6">어떤 약관을 확인할까요?</h2>
 
         <div className="space-y-4">
           <div>
@@ -158,7 +180,9 @@ export default function AddServiceModal({ onClose }) {
                     >
                       <span>{name}</span>
                       {subscribedIds.includes(catalogMap.get(name)?.id) && (
-                        <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-semibold">구독 중</span>
+                        <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-semibold">
+                          구독 중
+                        </span>
                       )}
                     </div>
                   ))}
@@ -173,18 +197,21 @@ export default function AddServiceModal({ onClose }) {
               <div className="bg-blue-50 rounded-xl p-4 mb-3 border border-blue-100">
                 <p className="text-sm text-blue-700">
                   <strong>{serviceName}</strong>의 약관이 준비되어 있습니다.
-                  {isAlreadySubscribed 
+                  {isAlreadySubscribed
                     ? " 이미 내 보관함에 추가된 서비스입니다."
-                    : " 약관 내용을 확인하고 궁금한 점을 검색해 보세요."
-                  }
+                    : " 약관 내용을 확인하고 궁금한 점을 검색해 보세요."}
                 </p>
               </div>
               <button
-                onClick={isAlreadySubscribed ? handleViewOnly : handleViewAndSubscribe}
+                onClick={
+                  isAlreadySubscribed ? handleViewOnly : handleViewAndSubscribe
+                }
                 className="w-full bg-blue-500 text-white rounded-xl py-3.5 font-bold text-lg hover:bg-blue-600 transition flex items-center justify-center gap-2"
               >
                 <Search className="w-5 h-5" />
-                {isAlreadySubscribed ? "약관 분석 보기" : "내 보관함에 추가 & 약관 분석 보기"}
+                {isAlreadySubscribed
+                  ? "약관 분석 보기"
+                  : "내 보관함에 추가 & 약관 분석 보기"}
               </button>
             </div>
           )}

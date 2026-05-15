@@ -70,4 +70,35 @@ export const api = {
       `/notifications/${notificationId}/read?user_id=${encodeURIComponent(userId)}`,
       { method: "PATCH" },
     ),
+
+  markAllNotificationsRead: ({ userId }) =>
+    request(`/notifications/read-all?user_id=${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+    }),
+
+  deleteNotification: ({ notificationId, userId }) =>
+    request(
+      `/notifications/${notificationId}?user_id=${encodeURIComponent(userId)}`,
+      { method: "DELETE" },
+    ),
+
+  chat: ({ userId, message, termId, sessionId }) =>
+    request("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        message,
+        term_id: termId ?? null,
+        session_id: sessionId ?? null,
+      }),
+    }),
+
+  listChatSessions: ({ userId }) =>
+    request(`/chat/sessions?user_id=${encodeURIComponent(userId)}`),
+
+  getChatSession: ({ sessionId, userId }) =>
+    request(
+      `/chat/sessions/${sessionId}?user_id=${encodeURIComponent(userId)}`,
+    ),
 };
