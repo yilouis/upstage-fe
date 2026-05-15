@@ -11,7 +11,7 @@ import spotify from "./spotify.jpg";
 import toss from "./toss.png";
 import tving from "./tving.jpg";
 import upstage from "./upstage.jpg";
-import watcha from "./watcha.jpg";
+import watcha from "./watcha.png";
 
 export const SERVICE_LOGOS = {
   "bank-salad": bankSalad,
