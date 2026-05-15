@@ -19,7 +19,12 @@ export default function Sidebar() {
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
-      addCategory(newCategoryName);
+      const newCategory = addCategory(newCategoryName);
+      if (newCategory) {
+        setSelectedCategory(newCategory.id);
+        setSelectedSector("전체");
+        setView("dashboard");
+      }
       setNewCategoryName("");
       setAddCategoryModalOpen(false);
     }

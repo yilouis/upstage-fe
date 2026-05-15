@@ -6,6 +6,7 @@ const AppContext = createContext();
 
 // localStorage key
 const SUBSCRIBED_KEY = "term_tracker_subscribed_ids";
+const CUSTOM_CATEGORIES_KEY = "term_tracker_custom_categories";
 
 function loadSubscribedIds() {
   try {
@@ -18,6 +19,36 @@ function loadSubscribedIds() {
 
 function saveSubscribedIds(ids) {
   localStorage.setItem(SUBSCRIBED_KEY, JSON.stringify(ids));
+}
+
+function loadCustomCategories() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomCategories(categories) {
+  localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+function mergeCategories(generatedCategories, customCategories) {
+  const merged = [...generatedCategories];
+
+  customCategories.forEach((customCategory) => {
+    const existing = merged.find((category) => category.id === customCategory.id);
+    if (!existing) {
+      merged.push({ ...customCategory, count: customCategory.count || 0 });
+    }
+  });
+
+  if (merged.length === 0) {
+    merged.push({ id: "내 서비스", name: "내 서비스", count: 0, sectors: ["전체"] });
+  }
+
+  return merged;
 }
 
 export const AppProvider = ({ children }) => {
@@ -34,6 +65,7 @@ export const AppProvider = ({ children }) => {
   // services = 사용자가 직접 추가(구독)한 서비스만
   const [services, setServices] = useState([]);
   const [subscribedIds, setSubscribedIds] = useState(loadSubscribedIds);
+  const [customCategories, setCustomCategories] = useState(loadCustomCategories);
 
   const [categories, setCategories] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -74,12 +106,10 @@ export const AppProvider = ({ children }) => {
         }
         categoryMap[domain].count += 1;
       });
-      const newCategories = Object.values(categoryMap);
-
-      // 구독한 서비스가 없으면 기본 카테고리
-      if (newCategories.length === 0) {
-        newCategories.push({ id: "내 서비스", name: "내 서비스", count: 0, sectors: ["전체"] });
-      }
+      const newCategories = mergeCategories(
+        Object.values(categoryMap),
+        customCategories,
+      );
 
       setCategories(newCategories);
       if (newCategories.length > 0 && !selectedCategory) {
@@ -88,7 +118,7 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error("Failed to fetch catalog:", error);
     }
-  }, [subscribedIds, selectedCategory]);
+  }, [subscribedIds, selectedCategory, customCategories]);
 
   // 알림 fetch
   const fetchNotifications = useCallback(async () => {
@@ -121,13 +151,25 @@ export const AppProvider = ({ children }) => {
 
   // 카테고리 추가 (로컬)
   const addCategory = (categoryName) => {
+    const trimmedName = categoryName.trim();
+    if (!trimmedName) return null;
+
+    const existing = categories.find((category) => category.id === trimmedName);
+    if (existing) return existing;
+
     const newCategory = {
-      id: categoryName,
-      name: categoryName,
+      id: trimmedName,
+      name: trimmedName,
       count: 0,
       sectors: ["전체"],
+      isCustom: true,
     };
-    setCategories(prev => [...prev, newCategory]);
+    setCustomCategories((prev) => {
+      const next = [...prev, newCategory];
+      saveCustomCategories(next);
+      return next;
+    });
+    setCategories((prev) => mergeCategories(prev, [newCategory]));
     return newCategory;
   };
 
