@@ -48,9 +48,9 @@ export default function TopBar() {
             setView("dashboard");
           }}
         >
-          <img src={logoImage} alt="T-T 로고" className="w-10 h-10" />
+          <img src={logoImage} alt="Terms Tracker 로고" className="w-10 h-10" />
           <span className="font-bold text-xl tracking-tight text-gray-800">
-            T-T
+            Terms Tracker
           </span>
         </div>
       </div>
