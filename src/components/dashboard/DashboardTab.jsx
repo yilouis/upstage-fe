@@ -30,8 +30,8 @@ export default function DashboardTab() {
 
   return (
     <>
-      <div className="p-8 max-w-5xl mx-auto fade-in">
-        <div className="flex justify-between items-end mb-8">
+      <div className="h-full min-h-0 p-8 max-w-5xl mx-auto fade-in flex flex-col">
+        <div className="flex justify-between items-end mb-8 shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">
             {categories.find((c) => c.id === selectedCategory)?.name || "내 서비스"} 보관함
           </h1>
@@ -44,7 +44,7 @@ export default function DashboardTab() {
         </div>
 
         {/* Sectors Tabs */}
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-3 mb-6 overflow-x-auto pb-2 shrink-0">
           {categories
             .find((c) => c.id === selectedCategory)
             ?.sectors.map((sector) => (
@@ -71,6 +71,10 @@ export default function DashboardTab() {
         </div>
 
         {/* Service Cards */}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2"
+          style={{ scrollbarGutter: "stable" }}
+        >
         {services.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="text-6xl mb-6">📋</div>
@@ -132,6 +136,7 @@ export default function DashboardTab() {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* Add Service Modal */}
