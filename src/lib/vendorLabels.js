@@ -9,6 +9,7 @@ const VENDOR_DISPLAY_NAMES = {
   watcha: "왓챠",
   tving: "티빙",
   wavve: "웨이브",
+  upstage: "업스테이지",
 };
 
 export function getVendorDisplayName(service) {
