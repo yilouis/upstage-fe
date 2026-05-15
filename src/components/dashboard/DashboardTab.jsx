@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useApp } from "../../AppContext";
 import AddServiceModal from "./AddServiceModal";
 import { FileText, Plus } from "lucide-react";
+import { getServiceLogo } from "../../logos";
 
 export default function DashboardTab() {
   const {
@@ -86,7 +87,9 @@ export default function DashboardTab() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-6 min-h-[200px]">
-            {currentServices.map((s) => (
+            {currentServices.map((s) => {
+              const logo = getServiceLogo(s);
+              return (
               <div
                 key={s.id}
                 draggable="true"
@@ -104,8 +107,16 @@ export default function DashboardTab() {
                 <div className="absolute top-4 right-4 text-xs font-semibold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
                   {s.category}
                 </div>
-                <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-blue-50 transition cursor-grab active:cursor-grabbing">
-                  <FileText className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
+                <div className="w-12 h-12 rounded-full bg-gray-50 overflow-hidden flex items-center justify-center mb-4 group-hover:bg-blue-50 transition cursor-grab active:cursor-grabbing">
+                  {logo ? (
+                    <img
+                      src={logo}
+                      alt={`${s.name} 로고`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <FileText className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
+                  )}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
                   {s.name}
@@ -114,7 +125,8 @@ export default function DashboardTab() {
                   구독일: {s.expiry}
                 </p>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

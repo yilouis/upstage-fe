@@ -3,6 +3,7 @@ import { useApp } from "../../AppContext";
 import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { api } from "../../lib/api";
 import { DEFAULT_USER_ID } from "../../config";
+import { getServiceLogo } from "../../logos";
 
 const QUESTION_SUGGESTIONS = [
   "환불 받을 수 있는 조건이 뭐야?",
@@ -331,21 +332,33 @@ export default function SearchTab() {
             📋 등록된 서비스
           </div>
           <ul className="space-y-1">
-            {services.map((service) => (
+            {services.map((service) => {
+              const logo = getServiceLogo(service);
+              return (
               <li
                 key={service.id}
                 onClick={() => {
                   setSelectedService(service);
                 }}
-                className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition ${
+                className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition flex items-center gap-2 ${
                   selectedService?.id === service.id
                     ? "bg-blue-50 text-blue-600 font-semibold"
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                {service.name}
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt=""
+                    className="w-5 h-5 rounded-md object-cover shrink-0"
+                  />
+                ) : (
+                  <span className="w-5 h-5 rounded-md bg-gray-100 shrink-0" />
+                )}
+                <span className="truncate">{service.name}</span>
               </li>
-            ))}
+              );
+            })}
             {services.length === 0 && (
               <li className="text-sm text-gray-400 px-2">등록된 서비스가 없습니다.</li>
             )}
