@@ -30,7 +30,7 @@ export const api = {
 
   getTerm: (termId) => request(`/terms/${termId}`),
 
-  listTermDisputes: ({ termId, topK = 3 }) =>
+  listTermDisputes: ({ termId, topK = 20 }) =>
     request(
       `/v1/terms/${termId}/disputes?top_k=${encodeURIComponent(topK)}`,
     ),

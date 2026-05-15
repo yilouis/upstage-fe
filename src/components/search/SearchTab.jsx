@@ -59,7 +59,7 @@ export default function SearchTab() {
       try {
         const disputes = await api.listTermDisputes({
           termId: selectedService.id,
-          topK: 3,
+          topK: 20,
         });
         setDisputeClauses(disputes?.clauses || []);
       } catch (e) {
