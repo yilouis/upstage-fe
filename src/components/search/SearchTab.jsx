@@ -340,7 +340,7 @@ export default function SearchTab() {
           onMouseDown={handleTranslateClick}
         >
           <Sparkles className="w-4 h-4 text-yellow-300" />
-          <span className="font-semibold tracking-wide">쉬운 해석</span>
+          <span className="font-semibold tracking-wide">질문하기</span>
           <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gray-900 rotate-45"></div>
         </div>
       )}
