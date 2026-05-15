@@ -3,6 +3,7 @@ const DOMAIN_LABELS = {
   OTT: "OTT",
   INSURANCE: "보험",
   APP: "앱",
+  AI: "AI",
   MEDICAL: "의료",
   TELECOM: "통신",
   ETC: "기타",
