@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>T-T (Term Tracker) - v2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+      body {
+        font-family: "Pretendard", sans-serif;
+        background-color: #f2f4f6;
+        color: #191f28;
+        overflow: hidden;
+      }
+      .toss-shadow {
+        box-shadow:
+          0 8px 20px rgba(0, 0, 0, 0.04),
+          0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+      .toss-card-shadow {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      }
+
+      /* Scrollbar hidden but functional */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d1d6db;
+        border-radius: 4px;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.3s ease-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef, createContext, useContext } = React;
+
+      // ===== API Configuration =====
+      const API_BASE_URL = "https://upstageaidemo-production.up.railway.app";
+
+      // ===== Context for Global State =====
+      const AppContext = createContext();
+
+      const AppProvider = ({ children }) => {
+        const [view, setView] = useState("dashboard");
+        const [selectedCategory, setSelectedCategory] = useState("insurance");
+        const [selectedSector, setSelectedSector] = useState("전체");
+        const [selectedService, setSelectedService] = useState(null);
+        const [draggedItem, setDraggedItem] = useState(null);
+        const [sidebarOpen, setSidebarOpen] = useState(true);
+        const [categories, setCategories] = useState([
+          {
+            id: "insurance",
+            name: "보험",
+            count: 3,
+            sectors: ["전체", "여행자 보험", "건강/실비", "자동차 보험"],
+          },
+          {
+            id: "ott",
+            name: "OTT",
+            count: 4,
+            sectors: ["전체", "영상 스트리밍", "음악 스트리밍"],
+          },
+          {
+            id: "finance",
+            name: "금융",
+            count: 2,
+            sectors: ["전체", "카드", "대출", "적금"],
+          },
+        ]);
+
+        const [services, setServices] = useState([
+          {
+            id: 1,
+            name: "여행자 보험 (메리츠)",
+            category: "insurance",
+            sector: "여행자 보험",
+            expiry: "2026.12.31",
+            initialTerms: "2025.01.15",
+            terms:
+              "제 1 조 (목적) 본 약관은 회사가 제공하는 여행 보험 서비스의 이용 조건을 규정합니다.",
+            changeHistory: [
+              {
+                date: "2025.11.20",
+                title: "보장 범위 변경",
+                summary: "질병 보장 추가되었습니다.",
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: "실비 보험 (DB)",
+            category: "insurance",
+            sector: "건강/실비",
+            expiry: "2027.05.01",
+            initialTerms: "2026.01.01",
+            terms:
+              "제 1 조 (목적) 본 약관은 실비 보험의 청구 절차를 규정합니다.",
+            changeHistory: [
+              {
+                date: "2026.02.10",
+                title: "자기 부담금 상향",
+                summary: "5만원에서 10만원으로 변경되었습니다.",
+              },
+            ],
+          },
+          {
+            id: 3,
+            name: "넷플릭스 프리미엄",
+            category: "ott",
+            sector: "영상 스트리밍",
+            expiry: "매월 15일 갱신",
+            initialTerms: "2024.06.15",
+            terms:
+              "제 2 조 (가족 공유) 귀하의 계정은 귀하의 가구 구성원(동일한 기본 위치에 거주하는 사람)과만 공유할 수 있습니다.",
+            changeHistory: [
+              {
+                date: "2026.05.01",
+                title: "가족 공유 제한",
+                summary: "동거인만 공유 가능하도록 정책 변경되었습니다.",
+              },
+            ],
+          },
+        ]);
+
+        // Dummy service data for suggestions
+        const allAvailableServices = [
+          "넷플릭스 프리미엄",
+          "실비 보험 (DB)",
+          "여행자 보험 (메리츠)",
+          "스포티파이 프리미엄",
+          "카카오 뮤직",
+          "한화생명 보험",
+          "삼성화재 자동차 보험",
+          "토스",
+          "카카오뱅크",
+          "신한카드",
+        ];
+
+        const addService = (serviceDataFromServer) => {
+          // 1. 카테고리(대분류) 및 섹터(소분류) 검사 및 생성
+          let targetCategoryId = "";
+          let updatedCategories = [...categories];
+
+          // 이름(name)을 기준으로 이미 존재하는 카테고리인지 찾습니다.
+          const existingCategoryIndex = updatedCategories.findIndex(
+            (c) => c.name === serviceDataFromServer.categoryName,
+          );
+
+          if (existingCategoryIndex !== -1) {
+            // [대분류가 이미 존재하는 경우]
+            targetCategoryId = updatedCategories[existingCategoryIndex].id;
+            const c = updatedCategories[existingCategoryIndex];
+
+            // 소분류가 없으면 새로 추가, 있으면 그대로 유지
+            const newSectors = c.sectors.includes(serviceDataFromServer.sector)
+              ? c.sectors
+              : [...c.sectors, serviceDataFromServer.sector];
+
+            updatedCategories[existingCategoryIndex] = {
+              ...c,
+              count: c.count + 1,
+              sectors: newSectors,
+            };
+          } else {
+            // [대분류 자체가 없는 경우 신규 생성]
+            targetCategoryId = `cat_${Date.now()}`;
+            updatedCategories.push({
+              id: targetCategoryId,
+              name: serviceDataFromServer.categoryName,
+              count: 1,
+              sectors: ["전체", serviceDataFromServer.sector], // 새로운 소분류도 함께 등록
+            });
+          }
+
+          // 업데이트된 카테고리 상태 저장
+          setCategories(updatedCategories);
+
+          // 2. 서비스 데이터 생성 및 저장
+          const newService = {
+            id: Math.max(0, ...services.map((s) => s.id)) + 1,
+            name: serviceDataFromServer.name,
+            category: targetCategoryId, // 새로 만들었거나 기존에 있던 카테고리 ID와 연결
+            sector: serviceDataFromServer.sector,
+            initialTerms: new Date().toISOString().split("T")[0],
+            expiry: serviceDataFromServer.expiry || "2026.12.31",
+            terms: "약관 내용이 여기에 표시됩니다...",
+            changeHistory: [],
+          };
+
+          setServices([...services, newService]);
+
+          // 모달 창에서 화면을 이동시킬 수 있도록 생성된 ID를 반환
+          return { targetCategoryId };
+        };
+
+        const updateService = (id, updates) => {
+          setServices(
+            services.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+          );
+        };
+
+        const deleteService = (id) => {
+          const service = services.find((s) => s.id === id);
+          if (service) {
+            setServices(services.filter((s) => s.id !== id));
+            setCategories(
+              categories.map((c) =>
+                c.id === service.category
+                  ? { ...c, count: Math.max(0, c.count - 1) }
+                  : c,
+              ),
+            );
+          }
+        };
+
+        const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
+
+        const [notifications, setNotifications] = useState([
+          {
+            id: 1,
+            serviceId: 3, // 넷플릭스
+            versionIndex: 1, // 변경된 버전(가족 공유 제한) 인덱스
+            title: "넷플릭스 약관 변경",
+            summary: "가족 공유 기기 제한 정책이 추가되었습니다.",
+            date: "2026.05.01",
+          },
+          {
+            id: 2,
+            serviceId: 2, // DB손해보험
+            versionIndex: 1,
+            title: "DB손해보험 약관 변경",
+            summary: "자기 부담금 상향 안내",
+            date: "2026.02.10",
+          },
+        ]);
+
+        const deleteNotification = (id) => {
+          setNotifications(notifications.filter((n) => n.id !== id));
+        };
+
+        const addCategory = (categoryName, sectors = []) => {
+          const newId = `cat_${Date.now()}`;
+          const newCategory = {
+            id: newId,
+            name: categoryName,
+            count: 0,
+            sectors: ["전체", ...sectors],
+          };
+          setCategories([...categories, newCategory]);
+          return newCategory;
+        };
+
+        return (
+          <AppContext.Provider
+            value={{
+              view,
+              setView,
+              selectedCategory,
+              setSelectedCategory,
+              selectedSector,
+              setSelectedSector,
+              selectedService,
+              setSelectedService,
+              draggedItem,
+              setDraggedItem,
+              categories,
+              setCategories,
+              services,
+              setServices,
+              addService,
+              updateService,
+              deleteService,
+              addCategory,
+              allAvailableServices,
+              sidebarOpen,
+              setSidebarOpen,
+              selectedVersionIndex,
+              setSelectedVersionIndex, // 추가
+              notifications,
+              deleteNotification,
+            }}
+          >
+            {children}
+          </AppContext.Provider>
+        );
+      };
+
+      // ===== Custom Hook =====
+      const useApp = () => {
+        const context = useContext(AppContext);
+        if (!context) {
+          throw new Error("useApp must be used within AppProvider");
+        }
+        return context;
+      };
+
+      // ===== Components =====
+
+      const TopBar = () => {
+        // useApp에서 필요한 함수와 상태들을 모두 가져옵니다.
+        const {
+          setView,
+          sidebarOpen,
+          setSidebarOpen,
+          notifications,
+          deleteNotification,
+          services,
+          setSelectedService,
+          setSelectedVersionIndex,
+        } = useApp();
+
+        const [userOpen, setUserOpen] = useState(false);
+        const [NotiOpen, setNotiOpen] = useState(false);
+
+        // 알림 클릭 시 해당 서비스의 특정 약관 버전으로 이동하는 함수
+        const handleNotiClick = (noti) => {
+          const targetService = services.find((s) => s.id === noti.serviceId);
+          if (targetService) {
+            setSelectedService(targetService);
+            setSelectedVersionIndex(noti.versionIndex); // 해당 버전 선택
+            setView("search"); // 검색(Q&A) 탭으로 이동
+            setNotiOpen(false); // 모달 닫기
+          }
+        };
+
+        return (
+          <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shrink-0 relative z-50">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
+              >
+                <i data-lucide="menu" className="w-6 h-6"></i>
+              </button>
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setView("dashboard")}
+              >
+                <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                  T
+                </div>
+                <span className="font-bold text-xl tracking-tight text-gray-800">
+                  T-T
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 relative">
+              <button
+                onClick={() => setNotiOpen(true)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+              >
+                <i data-lucide="bell" className="w-6 h-6 text-gray-600"></i>
+                {notifications.length > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+              <button
+                onClick={() => setUserOpen(!userOpen)}
+                className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition"
+              >
+                <i data-lucide="user" className="w-5 h-5 text-gray-600"></i>
+              </button>
+
+              {/* User Popover */}
+              {userOpen && (
+                <div className="absolute top-12 right-0 w-64 bg-white rounded-2xl toss-shadow p-4 border border-gray-100 fade-in">
+                  <div className="font-semibold text-lg">김토스</div>
+                  <div className="text-sm text-gray-500 mb-4">
+                    toss@yonsei.ac.kr
+                  </div>
+                  <div className="border-t border-gray-100 pt-2">
+                    <button className="w-full text-left text-sm text-red-500 font-medium py-2 hover:bg-red-50 rounded-lg px-2">
+                      로그아웃
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Noti Modal */}
+              {NotiOpen && (
+                <div
+                  className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in"
+                  onClick={() => setNotiOpen(false)} // 배경 클릭 시 닫기
+                >
+                  <div
+                    className="bg-white w-full max-w-lg rounded-[24px] overflow-hidden toss-shadow"
+                    onClick={(e) => e.stopPropagation()} // 모달 내부 클릭 시 닫힘 방지
+                  >
+                    <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                      <h2 className="text-xl font-bold">약관 변경 알림</h2>
+                      <div className="flex items-center gap-4">
+                        {/* 전체 삭제 버튼 추가 */}
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={() =>
+                              notifications.forEach((n) =>
+                                deleteNotification(n.id),
+                              )
+                            }
+                            className="text-sm text-gray-400 hover:text-red-500 font-medium transition"
+                          >
+                            전체 삭제
+                          </button>
+                        )}
+                        <button onClick={() => setNotiOpen(false)}>
+                          <i
+                            data-lucide="x"
+                            className="w-6 h-6 text-gray-400"
+                          ></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-10 text-gray-400">
+                          새로운 알림이 없습니다.
+                        </div>
+                      ) : (
+                        notifications.map((noti) => (
+                          <div
+                            key={noti.id}
+                            className="group relative bg-blue-50 hover:bg-blue-100 transition p-4 rounded-2xl cursor-pointer"
+                            onClick={() => handleNotiClick(noti)}
+                          >
+                            <div className="font-bold text-blue-700 mb-1 pr-8">
+                              {noti.title}
+                            </div>
+                            <div className="text-sm text-blue-900 opacity-80">
+                              {noti.summary}
+                            </div>
+                            <div className="text-[10px] text-blue-400 mt-2">
+                              {noti.date}
+                            </div>
+
+                            {/* 확실하게 보이는 개별 삭제 버튼 */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation(); // 이동 이벤트 방지
+                                deleteNotification(noti.id);
+                              }}
+                              className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full hover:bg-blue-200 text-blue-400 font-bold transition"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </header>
+        );
+      };
+
+      const Sidebar = () => {
+        const {
+          view,
+          setView,
+          selectedCategory,
+          setSelectedCategory,
+          setSelectedSector,
+          categories,
+          addCategory,
+          sidebarOpen,
+          setSidebarOpen,
+        } = useApp();
+
+        const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
+        const [newCategoryName, setNewCategoryName] = useState("");
+
+        const handleAddCategory = () => {
+          if (newCategoryName.trim()) {
+            addCategory(newCategoryName);
+            setNewCategoryName("");
+            setAddCategoryModalOpen(false);
+          }
+        };
+
+        return (
+          <>
+            <aside
+              className={`${
+                sidebarOpen ? "w-64 px-4 border-r" : "w-0 px-0 border-r-0"
+              } bg-white border-gray-100 flex flex-col justify-between py-6 transition-all duration-300 overflow-hidden whitespace-nowrap shrink-0`}
+            >
+              <div>
+                <div className="text-xs font-semibold text-gray-400 mb-4 px-2">
+                  나의 서비스
+                </div>
+                <ul className="space-y-1">
+                  {categories.map((c) => (
+                    <li
+                      key={c.id}
+                      onClick={() => {
+                        setSelectedCategory(c.id);
+                        setSelectedSector("전체");
+                        setView("dashboard");
+                      }}
+                      className={`flex justify-between items-center px-4 py-3 rounded-2xl cursor-pointer transition ${
+                        selectedCategory === c.id && view === "dashboard"
+                          ? "bg-blue-50 text-blue-600 font-semibold"
+                          : "hover:bg-gray-50 text-gray-700"
+                      }`}
+                    >
+                      <span>{c.name}</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
+                        {c.count}
+                      </span>
+                    </li>
+                  ))}
+                  <li
+                    onClick={() => setAddCategoryModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-3 rounded-2xl cursor-pointer hover:bg-gray-50 text-gray-500 transition border border-dashed border-gray-200 mt-2"
+                  >
+                    <i data-lucide="plus" className="w-4 h-4"></i> 카테고리 추가
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2 border-t border-gray-100 pt-4 mt-4">
+                <div
+                  onClick={() => setView("search")}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition ${
+                    view === "search"
+                      ? "bg-blue-50 text-blue-600 font-semibold"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <i data-lucide="search" className="w-5 h-5"></i>
+                  <span>서비스 검색</span>
+                </div>
+                <div
+                  onClick={() => setView("calendar")}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition ${
+                    view === "calendar"
+                      ? "bg-blue-50 text-blue-600 font-semibold"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <i data-lucide="calendar" className="w-5 h-5"></i>
+                  <span>나의 중요 일정</span>
+                </div>
+              </div>
+            </aside>
+
+            {/* Add Category Modal */}
+            {addCategoryModalOpen && (
+              <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 fade-in">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-8 toss-shadow">
+                  <h2 className="text-2xl font-bold mb-4">새 카테고리 추가</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        카테고리 이름
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="예: 구독 서비스, 쇼핑"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="w-full bg-gray-50 border border-transparent focus:border-blue-500 focus:bg-white outline-none rounded-xl px-4 py-3 transition"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddCategory();
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddCategory}
+                      className="w-full bg-blue-500 text-white rounded-xl py-3 font-bold hover:bg-blue-600 transition"
+                    >
+                      카테고리 추가
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddCategoryModalOpen(false);
+                        setNewCategoryName("");
+                      }}
+                      className="w-full bg-gray-100 text-gray-700 rounded-xl py-3 font-semibold hover:bg-gray-200 transition"
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      };
+
+      const DashboardTab = () => {
+        const {
+          selectedCategory,
+          selectedSector,
+          setSelectedSector,
+          categories,
+          services,
+          draggedItem,
+          setDraggedItem,
+          setView,
+          setSelectedService,
+          updateService,
+        } = useApp();
+
+        const [addModalOpen, setAddModalOpen] = useState(false);
+
+        const currentServices = services.filter(
+          (s) =>
+            s.category === selectedCategory &&
+            (selectedSector === "전체" || s.sector === selectedSector),
+        );
+
+        return (
+          <>
+            <div className="p-8 max-w-5xl mx-auto fade-in">
+              <div className="flex justify-between items-end mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {categories.find((c) => c.id === selectedCategory)?.name}{" "}
+                  보관함
+                </h1>
+                <button
+                  onClick={() => setAddModalOpen(true)}
+                  className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold transition toss-shadow"
+                >
+                  <i data-lucide="plus" className="w-5 h-5"></i> 서비스 추가
+                </button>
+              </div>
+
+              {/* Sectors Tabs */}
+              <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+                {categories
+                  .find((c) => c.id === selectedCategory)
+                  ?.sectors.map((sector) => (
+                    <div
+                      key={sector}
+                      onClick={() => setSelectedSector(sector)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggedItem && sector !== "전체") {
+                          updateService(draggedItem.id, { sector });
+                        }
+                      }}
+                      className={`px-4 py-2 text-sm rounded-full font-semibold cursor-pointer border transition whitespace-nowrap ${
+                        selectedSector === sector
+                          ? "bg-gray-800 text-white border-gray-800"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      {sector}
+                    </div>
+                  ))}
+              </div>
+
+              {/* Service Cards */}
+              <div className="grid grid-cols-3 gap-6 min-h-[200px]">
+                {currentServices.map((s) => (
+                  <div
+                    key={s.id}
+                    draggable="true"
+                    onDragStart={(e) => {
+                      setDraggedItem(s);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={() => setDraggedItem(null)}
+                    onClick={() => {
+                      setSelectedService(s);
+                      setView("search");
+                    }}
+                    className="bg-white relative p-6 rounded-[24px] toss-card-shadow cursor-pointer hover:-translate-y-1 transition duration-300 border border-gray-100 group"
+                  >
+                    <div className="absolute top-4 right-4 text-xs font-semibold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
+                      {s.sector}
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-blue-50 transition cursor-grab active:cursor-grabbing">
+                      <i
+                        data-lucide="file-text"
+                        className="w-6 h-6 text-gray-400 group-hover:text-blue-500"
+                      ></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {s.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      다음 일정: {s.expiry}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add Service Modal */}
+            {addModalOpen && (
+              <AddServiceModal onClose={() => setAddModalOpen(false)} />
+            )}
+          </>
+        );
+      };
+
+      const AddServiceModal = ({ onClose }) => {
+        const {
+          addService,
+          selectedCategory,
+          setSelectedCategory,
+          setSelectedSector,
+          allAvailableServices,
+        } = useApp();
+        const [serviceName, setServiceName] = useState("");
+        const [suggestions, setSuggestions] = useState([]);
+        const [showSuggestions, setShowSuggestions] = useState(false);
+        const fileInputRef = useRef(null);
+        const [uploadedFile, setUploadedFile] = useState(null);
+
+        const handleServiceInput = (value) => {
+          setServiceName(value);
+          if (value.trim().length > 0) {
+            const filtered = allAvailableServices.filter((service) =>
+              service.toLowerCase().includes(value.toLowerCase()),
+            );
+            setSuggestions(filtered);
+            setShowSuggestions(true);
+          } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
+        };
+
+        const handleSelectService = (service) => {
+          setServiceName(service);
+          setSuggestions([]);
+          setShowSuggestions(false);
+        };
+
+        const handleAddService = () => {
+          if (!serviceName.trim()) return;
+
+          // 실제 백엔드 API와 연동
+          const uploadFile = async () => {
+            try {
+              // 1. 사용자 입력받은 서비스 이름으로 약관 업로드 (필요한 경우)
+              // 2. 서버에서 서비스 정보 조회
+              const response = await fetch(`${API_BASE_URL}/terms`);
+              if (!response.ok) throw new Error("Failed to fetch terms");
+              
+              const termsData = await response.json();
+              console.log("📥 API Response:", termsData);
+
+              // 서버 응답 데이터를 기반으로 서비스 추가
+              // (실제로는 업로드된 약관 정보를 받아옴)
+              const serverResponse = {
+                categoryName: "OTT",
+                sector: "영상 스트리밍",
+              };
+
+              // Context의 addService 호출
+              const { targetCategoryId } = addService({
+                name: serviceName,
+                categoryName: serverResponse.categoryName,
+                sector: serverResponse.sector,
+                expiry: "2026.12.31",
+              });
+
+              setSelectedCategory(targetCategoryId);
+              setSelectedSector(serverResponse.sector);
+              onClose();
+            } catch (error) {
+              console.error("❌ API Error:", error);
+              alert("서비스 추가에 실패했습니다: " + error.message);
+            }
+          };
+
+          uploadFile();
+        };
+
+        return (
+          <div
+            className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 fade-in px-4"
+            onClick={onClose}
+          >
+            <div
+              className="bg-white w-full max-w-md rounded-[28px] p-8 toss-shadow relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button onClick={onClose} className="absolute top-6 right-6">
+                <i data-lucide="x" className="w-6 h-6 text-gray-400"></i>
+              </button>
+              <h2 className="text-2xl font-bold mb-6">
+                어떤 약관을 등록할까요?
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    서비스 검색
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="예: 넷플릭스, 토스, DB손해보험"
+                      value={serviceName}
+                      onChange={(e) => handleServiceInput(e.target.value)}
+                      className="w-full bg-gray-50 border border-transparent focus:border-blue-500 focus:bg-white outline-none rounded-xl px-4 py-3 transition"
+                    />
+                    {/* Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute top-12 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                        {suggestions.map((service) => (
+                          <div
+                            key={service}
+                            onClick={() => handleSelectService(service)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700"
+                          >
+                            {service}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-center text-sm text-gray-400 font-medium">
+                  OR
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    약관 URL 입력
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://"
+                    className="w-full bg-gray-50 border border-transparent focus:border-blue-500 focus:bg-white outline-none rounded-xl px-4 py-3 transition"
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setUploadedFile(e.target.files[0].name);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`w-full border-2 border-dashed rounded-xl py-8 font-medium transition flex flex-col items-center justify-center gap-2 ${
+                      uploadedFile
+                        ? "border-green-300 bg-green-50 cursor-default"
+                        : "border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-blue-400"
+                    }`}
+                  >
+                    {uploadedFile ? (
+                      <>
+                        <i
+                          data-lucide="check-circle-2"
+                          className="w-6 h-6 text-green-500"
+                        ></i>
+                        <span className="text-green-700">
+                          업로드 완료: {uploadedFile}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <i
+                          data-lucide="upload"
+                          className="w-6 h-6 text-gray-400"
+                        ></i>
+                        서면 약관 PDF 업로드
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddService}
+                  className="w-full bg-blue-500 text-white rounded-xl py-3.5 font-bold text-lg mt-4 hover:bg-blue-600 transition"
+                >
+                  가입 및 분석 시작하기
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const SearchTab = () => {
+        const {
+          services,
+          selectedService,
+          setSelectedService,
+          selectedVersionIndex,
+          setSelectedVersionIndex,
+        } = useApp();
+
+        const [newMessage, setNewMessage] = useState("");
+        const [chatMessages, setChatMessages] = useState([]);
+        const [isLoading, setIsLoading] = useState(false);
+        const chatEndRef = useRef(null);
+
+        // 💡 1. 툴팁 표시를 위한 새로운 상태들
+        const [selectedText, setSelectedText] = useState("");
+        const [showTooltip, setShowTooltip] = useState(false);
+        const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+        const getTermsVersions = (service) => {
+          if (!service) return [];
+          return [
+            {
+              date: service.initialTerms,
+              title: "최초 가입 약관",
+              content: service.terms,
+            },
+            ...(service.changeHistory || []).map((change) => ({
+              date: change.date,
+              title: change.title,
+              content: `[${change.date}] ${change.title}\n\n${change.summary}\n\n...약관 전체 내용...`,
+            })),
+          ];
+        };
+
+        const currentTermsVersion = selectedService
+          ? getTermsVersions(selectedService)[selectedVersionIndex]
+          : null;
+
+        useEffect(() => {
+          setChatMessages([]);
+          setNewMessage("");
+          setShowTooltip(false); // 탭이 바뀌면 툴팁도 숨김
+        }, [selectedService, selectedVersionIndex]);
+
+        useEffect(() => {
+          chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [chatMessages, isLoading]);
+
+        // 💡 2. 메시지 전송 공통 로직 (직접 입력 & 툴팁 클릭 모두 사용)
+        const processMessage = (textToSend) => {
+          if (!textToSend.trim() || !selectedService) return;
+
+          const userMsg = { role: "user", content: textToSend };
+          setChatMessages((prev) => [...prev, userMsg]);
+          setIsLoading(true);
+
+          setTimeout(() => {
+            const aiMsg = {
+              role: "ai",
+              content: `선택하신 내용에 대한 평문 해석 및 분석 결과입니다.\n\n(백엔드 연결 시 실제 해석 내용이 들어갑니다.)`,
+            };
+            setChatMessages((prev) => [...prev, aiMsg]);
+            setIsLoading(false);
+          }, 1500);
+        };
+
+        // 일반 채팅 전송
+        const handleSendMessage = () => {
+          processMessage(newMessage);
+          setNewMessage("");
+        };
+
+        // 💡 3. 마우스 드래그 종료 시 툴팁 띄우기
+        const handleMouseUp = () => {
+          const selection = window.getSelection();
+          const text = selection.toString().trim();
+
+          if (text.length > 0) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect(); // 선택 영역의 화면 좌표 계산
+
+            setSelectedText(text);
+            // 툴팁 위치를 선택 영역의 중앙 위쪽으로 설정
+            setTooltipPos({
+              x: rect.left + rect.width / 2,
+              y: rect.top - 10,
+            });
+            setShowTooltip(true);
+          } else {
+            setShowTooltip(false);
+          }
+        };
+
+        // 💡 4. 툴팁 클릭 시 자동 질문 전송
+        const handleTranslateClick = (e) => {
+          e.preventDefault(); // 텍스트 선택이 풀리는 것을 방지
+          e.stopPropagation();
+
+          const question = `"${selectedText}"에 대한 평문 해석해줘`;
+          processMessage(question);
+
+          setShowTooltip(false);
+          window.getSelection()?.removeAllRanges(); // 전송 후 드래그 영역 해제
+        };
+
+        return (
+          <div className="flex h-full gap-4 fade-in p-6 -mt-4 relative">
+            {/* 💡 5. 평문 해석 툴팁 UI (showTooltip이 true일 때만 화면에 고정 위치로 표시) */}
+            {showTooltip && (
+              <div
+                className="fixed z-[100] bg-gray-900 text-white px-3 py-2 rounded-xl text-sm shadow-xl flex items-center gap-1.5 cursor-pointer hover:bg-gray-800 transition-colors transform -translate-x-1/2 -translate-y-full"
+                style={{ top: tooltipPos.y, left: tooltipPos.x }}
+                onMouseDown={handleTranslateClick} // onClick 대신 onMouseDown을 써야 선택 영역이 풀리기 전에 실행됩니다.
+              >
+                <i
+                  data-lucide="sparkles"
+                  className="w-4 h-4 text-yellow-300"
+                ></i>
+                <span className="font-semibold tracking-wide">평문 해석</span>
+                <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gray-900 rotate-45"></div>
+              </div>
+            )}
+
+            {/* Left Sidebar */}
+            <div className="w-55 shrink-0 space-y-4 overflow-y-auto">
+              <div className="bg-white rounded-2xl p-4 toss-card-shadow border border-gray-100">
+                <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
+                  📋 등록된 서비스
+                </div>
+                <ul className="space-y-1">
+                  {services.map((service) => (
+                    <li
+                      key={service.id}
+                      onClick={() => {
+                        setSelectedService(service);
+                        setSelectedVersionIndex(0);
+                      }}
+                      className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition ${
+                        selectedService?.id === service.id
+                          ? "bg-blue-50 text-blue-600 font-semibold"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {service.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {selectedService && (
+                <div className="bg-white rounded-2xl p-4 toss-card-shadow border border-gray-100">
+                  <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
+                    📅 약관 버전 ({getTermsVersions(selectedService).length})
+                  </div>
+                  <ul className="space-y-1 max-h-64 overflow-y-auto">
+                    {getTermsVersions(selectedService).map((version, index) => (
+                      <li
+                        key={index}
+                        onClick={() => setSelectedVersionIndex(index)}
+                        className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition ${
+                          selectedVersionIndex === index
+                            ? "bg-blue-50 text-blue-600 font-semibold border-l-4 border-blue-600"
+                            : "text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="text-xs text-gray-500">
+                          {version.date}
+                        </div>
+                        <div className="font-medium">{version.title}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Main + Right Layout */}
+            <div className="flex-1 flex gap-4">
+              {/* Main Content */}
+              {selectedService && currentTermsVersion ? (
+                <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+                  <div className="border-b border-gray-100 p-6 bg-gradient-to-r from-blue-50 to-white">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {selectedService.name}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {currentTermsVersion.title} • {currentTermsVersion.date}
+                    </p>
+                  </div>
+                  {/* 💡 6. 약관 텍스트 영역에 onMouseUp 이벤트 연결 */}
+                  <div
+                    className="flex-1 overflow-y-auto p-8 relative"
+                    onMouseUp={handleMouseUp}
+                  >
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap selection:bg-blue-200">
+                      {currentTermsVersion.content}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
+                  <p className="text-gray-400">서비스를 선택해주세요.</p>
+                </div>
+              )}
+
+              {/* Right Chat Sidebar */}
+              <div className="w-65 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+                <div className="border-b border-gray-100 p-4 bg-gray-50 shrink-0">
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
+                    💬 약관 Q&A
+                  </h3>
+                  {selectedService && (
+                    <div className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded-md truncate">
+                      Context: {selectedService.name} (
+                      {currentTermsVersion?.title})
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {chatMessages.length === 0 && !isLoading ? (
+                    <div className="text-center text-gray-400 py-10">
+                      <p className="text-sm">
+                        약관을 스크랩하거나
+                        <br />
+                        직접 질문을 입력해 보세요.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {chatMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[90%] px-4 py-3 text-sm leading-relaxed ${
+                              msg.role === "user"
+                                ? "bg-blue-500 text-white rounded-2xl rounded-br-none shadow-sm"
+                                : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200 whitespace-pre-wrap"
+                            }`}
+                          >
+                            {msg.role === "ai" && (
+                              <div className="font-bold text-[10px] text-gray-400 mb-1">
+                                AI ANSWER
+                              </div>
+                            )}
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="px-4 py-4 bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200">
+                            <div className="flex gap-1.5">
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "0ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "150ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "300ms" }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={chatEndRef} />
+                    </>
+                  )}
+                </div>
+
+                <div className="border-t border-gray-100 p-4 bg-white shrink-0">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleSendMessage()
+                      }
+                      placeholder={
+                        selectedService
+                          ? "질문을 입력하세요..."
+                          : "서비스를 먼저 선택하세요"
+                      }
+                      disabled={!selectedService || isLoading}
+                      className="flex-1 bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none rounded-xl px-3 py-2.5 text-sm transition disabled:opacity-50"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={
+                        !selectedService || !newMessage.trim() || isLoading
+                      }
+                      className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-xl transition shadow-sm font-bold text-sm"
+                    >
+                      전송
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const CalendarTab = () => {
+        const { services } = useApp();
+
+        // 현재 날짜 기준 (2026년 5월 데모)
+        const days = Array.from({ length: 31 }, (_, i) => i + 1);
+        const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+
+        return (
+          <div className="p-8 max-w-5xl mx-auto fade-in">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">중요 일정</h1>
+                <p className="text-gray-500 mt-2">
+                  약관 갱신 및 만료 예정일을 확인하세요.
+                </p>
+              </div>
+              <div className="flex gap-2 bg-white p-1 rounded-xl border border-gray-200">
+                <button className="px-4 py-2 text-sm font-semibold bg-gray-800 text-white rounded-lg shadow-sm">
+                  May 2026
+                </button>
+                <button className="px-4 py-2 text-sm font-semibold text-gray-400 hover:bg-gray-50 rounded-lg transition">
+                  Jun
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-8">
+              {/* 캘린더 그리드 (왼쪽 7칸) */}
+              <div className="col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 toss-shadow">
+                <div className="grid grid-cols-7 mb-4">
+                  {weekDays.map((d) => (
+                    <div
+                      key={d}
+                      className={`text-center text-xs font-bold ${d === "일" ? "text-red-400" : "text-gray-400"}`}
+                    >
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-y-4">
+                  {/* 2026년 5월 1일은 금요일 시작이므로 앞에 빈 칸 5개 추가 */}
+                  {Array(5)
+                    .fill(null)
+                    .map((_, i) => (
+                      <div key={`empty-${i}`} />
+                    ))}
+                  {days.map((day) => {
+                    const hasEvent = [1, 10, 15, 31].includes(day); // 데모용 이벤트 표시
+                    return (
+                      <div
+                        key={day}
+                        className="aspect-square flex flex-col items-center justify-start p-1 relative cursor-pointer hover:bg-gray-50 rounded-xl transition"
+                      >
+                        <span
+                          className={`text-sm font-medium ${day === 15 ? "text-blue-600 font-bold" : "text-gray-700"}`}
+                        >
+                          {day}
+                        </span>
+                        {hasEvent && (
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1"></div>
+                        )}
+                        {day === 15 && (
+                          <div className="absolute inset-0 border-2 border-blue-500/20 rounded-xl"></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 다가오는 일정 리스트 (오른쪽 4칸) */}
+              <div className="col-span-4 space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 ml-1">
+                  다가오는 일정
+                </h3>
+                <div className="space-y-3">
+                  {services.map((s) => (
+                    <div
+                      key={s.id}
+                      className="bg-white p-5 rounded-2xl border border-gray-100 toss-card-shadow flex items-start gap-4 hover:border-blue-200 transition"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                        <i
+                          data-lucide="calendar-days"
+                          className="w-5 h-5 text-blue-500"
+                        ></i>
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-bold text-blue-500 mb-0.5">
+                          {s.expiry}
+                        </div>
+                        <div className="text-sm font-bold text-gray-800">
+                          {s.name}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          약관 갱신 예정
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 비어있는 상태 대응 */}
+                  {services.length === 0 && (
+                    <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-sm text-gray-400">
+                        등록된 일정이 없습니다.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <button className="w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-2xl text-sm font-semibold transition border border-gray-100">
+                  일정 전체 보기
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+      // ===== Main App =====
+      const MainApp = () => {
+        const { view } = useApp();
+
+        useEffect(() => {
+          const timeout = setTimeout(() => {
+            lucide.createIcons();
+          }, 50);
+          return () => clearTimeout(timeout);
+        });
+
+        return (
+          <div className="h-screen flex flex-col">
+            <TopBar />
+
+            <div className="flex flex-1 overflow-hidden">
+              <Sidebar />
+
+              {/* Main Content Area */}
+              <main className="flex-1 relative overflow-auto">
+                {view === "dashboard" && <DashboardTab />}
+                {view === "search" && <SearchTab />}
+                {view === "calendar" && <CalendarTab />}
+              </main>
+            </div>
+          </div>
+        );
+      };
+
+      // ===== Root Component =====
+      const Root = () => {
+        return (
+          <AppProvider>
+            <MainApp />
+          </AppProvider>
+        );
+      };
+
+      // ===== Render =====
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<Root />);
+    </script>
+  </body>
+</html>
