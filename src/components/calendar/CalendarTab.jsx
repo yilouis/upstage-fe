@@ -54,8 +54,8 @@ export default function CalendarTab() {
     : null;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto fade-in">
-      <div className="flex justify-between items-end mb-8">
+    <div className="h-full min-h-0 p-8 max-w-5xl mx-auto fade-in flex flex-col">
+      <div className="flex justify-between items-end mb-8 shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">중요 일정</h1>
           <p className="text-gray-500 mt-2">
@@ -75,9 +75,9 @@ export default function CalendarTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-12 gap-8 flex-1 min-h-0">
         {/* 캘린더 그리드 (왼쪽 8칸) */}
-        <div className="col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 toss-shadow">
+        <div className="col-span-8 bg-white rounded-[32px] p-8 border border-gray-100 toss-shadow overflow-y-auto">
           <div className="grid grid-cols-7 mb-4">
             {weekDays.map((d) => (
               <div
@@ -151,11 +151,11 @@ export default function CalendarTab() {
         </div>
 
         {/* 다가오는 일정 리스트 (오른쪽 4칸) */}
-        <div className="col-span-4 space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 ml-1">
+        <div className="col-span-4 flex flex-col min-h-0">
+          <h3 className="text-lg font-bold text-gray-900 ml-1 mb-4 shrink-0">
             다가오는 일정
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0">
             {upcoming.map((evt) => {
               const service = services.find((s) => s.id === evt.term_id);
               const style = EVENT_KIND_STYLES[evt.kind] || {
