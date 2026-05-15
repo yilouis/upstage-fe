@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from "./lib/api";
 import { DEFAULT_USER_ID } from "./config";
 import { getDomainLabel } from "./lib/domainLabels";
+import { getVendorDisplayName } from "./lib/vendorLabels";
 import {
   loadBilling,
   saveBilling,
@@ -105,16 +106,19 @@ export const AppProvider = ({ children }) => {
       const termsRes = await api.listTerms();
       const terms = termsRes.items || [];
       
-      const catalogItems = terms.map(term => ({
-        id: term.id,
-        name: term.service_name,
-        vendor_slug: term.vendor_slug || null,
-        category: term.domain || "미분류",
-        sector: "전체",
-        expiry: term.subscribed_at || "미상",
-        initialTerms: term.created_at ? new Date(term.created_at).toISOString().split('T')[0] : "",
-        status: term.status,
-      }));
+      const catalogItems = terms.map(term => {
+        const base = {
+          id: term.id,
+          name: term.service_name,
+          vendor_slug: term.vendor_slug || null,
+          category: term.domain || "미분류",
+          sector: "전체",
+          expiry: term.subscribed_at || "미상",
+          initialTerms: term.created_at ? new Date(term.created_at).toISOString().split('T')[0] : "",
+          status: term.status,
+        };
+        return { ...base, name: getVendorDisplayName(base) };
+      });
       setCatalog(catalogItems);
 
       // 구독한 서비스만 필터링

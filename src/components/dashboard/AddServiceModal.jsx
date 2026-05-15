@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useApp } from "../../AppContext";
 import { X, CheckCircle2, Upload, Link, Search } from "lucide-react";
+import { getVendorDisplayName } from "../../lib/vendorLabels";
 
 export default function AddServiceModal({ onClose }) {
   const {
@@ -117,7 +118,7 @@ export default function AddServiceModal({ onClose }) {
       });
 
       if (response?.id) {
-        setSelectedService({
+        const base = {
           id: response.id,
           name: response.service_name,
           vendor_slug: response.vendor_slug || null,
@@ -125,7 +126,8 @@ export default function AddServiceModal({ onClose }) {
           sector: "전체",
           expiry: new Date().toISOString().split("T")[0],
           status: response.status,
-        });
+        };
+        setSelectedService({ ...base, name: getVendorDisplayName(base) });
         setView("search");
       }
       onClose();
