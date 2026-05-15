@@ -71,14 +71,19 @@ export function updateBillingRecord(billing, serviceId, patch) {
   return next;
 }
 
-// Derive the 3 mock events (구독 시작, 지난 결제, 다음 결제) for one service
-// within a window of [today - 60d, today + 60d] so they show up around the
-// currently-displayed month.
-function deriveServiceEvents(service, record, today) {
+const startOfDay = (d) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+// Derive mock events for a service across a month window.
+// - 구독 시작: single event on subscribedAt
+// - Recurring billing: one event per month in the window at billingDay
+//   (clamped to the month length). Kind is "prev" if the date is before
+//   today, otherwise "next".
+// Events whose billing date falls before subscribedAt are skipped.
+function deriveServiceEvents(service, record, today, monthsBefore, monthsAfter) {
   if (!record) return [];
   const events = [];
 
-  // 구독 시작
   if (record.subscribedAt) {
     events.push({
       id: `mock-${service.id}-start`,
@@ -91,61 +96,51 @@ function deriveServiceEvents(service, record, today) {
     });
   }
 
-  if (record.billingDay) {
-    const day = Number(record.billingDay);
-    const year = today.getFullYear();
-    const month = today.getMonth();
+  if (!record.billingDay) return events;
 
-    const lastDay = clampDay(year, month - 1, day);
-    const lastDate = new Date(year, month - 1, lastDay);
+  const day = Number(record.billingDay);
+  const todayMid = startOfDay(today);
+  const subscribedDate = record.subscribedAt
+    ? startOfDay(new Date(record.subscribedAt))
+    : null;
 
-    const nextMonthDay = clampDay(year, month + 1, day);
-    const thisMonthDay = clampDay(year, month, day);
-    const thisMonthDate = new Date(year, month, thisMonthDay);
-    const nextDate =
-      thisMonthDate >= today
-        ? thisMonthDate
-        : new Date(year, month + 1, nextMonthDay);
+  for (let offset = -monthsBefore; offset <= monthsAfter; offset++) {
+    const base = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const clamped = clampDay(year, month, day);
+    const billingDate = new Date(year, month, clamped);
 
-    // 지난 결제 = 다음 결제 직전 한 달치
-    const prevDate = new Date(
-      nextDate.getFullYear(),
-      nextDate.getMonth() - 1,
-      clampDay(nextDate.getFullYear(), nextDate.getMonth() - 1, day),
-    );
+    if (subscribedDate && billingDate < subscribedDate) continue;
 
+    const isPast = billingDate < todayMid;
     events.push({
-      id: `mock-${service.id}-prev`,
+      id: `mock-${service.id}-bill-${year}-${pad(month + 1)}`,
       term_id: service.id,
-      event_date: toIsoDate(prevDate),
-      event_type: "지난 결제",
-      label: `${service.name} 지난 결제`,
+      event_date: toIsoDate(billingDate),
+      event_type: isPast ? "지난 결제" : "다음 결제",
+      label: `${service.name} ${isPast ? "지난 결제" : "다음 결제"}`,
       source: "mock",
-      kind: "prev",
+      kind: isPast ? "prev" : "next",
     });
-    events.push({
-      id: `mock-${service.id}-next`,
-      term_id: service.id,
-      event_date: toIsoDate(nextDate),
-      event_type: "다음 결제",
-      label: `${service.name} 다음 결제`,
-      source: "mock",
-      kind: "next",
-    });
-
-    // Suppress unused var warning while keeping lastDate variable for clarity.
-    void lastDate;
   }
 
   return events;
 }
 
-export function deriveMockEvents(services, billing, today = new Date()) {
+export function deriveMockEvents(
+  services,
+  billing,
+  today = new Date(),
+  { monthsBefore = 2, monthsAfter = 6 } = {},
+) {
   const out = [];
   services.forEach((service) => {
     const record = billing[service.id];
     if (!record) return;
-    out.push(...deriveServiceEvents(service, record, today));
+    out.push(
+      ...deriveServiceEvents(service, record, today, monthsBefore, monthsAfter),
+    );
   });
   return out;
 }

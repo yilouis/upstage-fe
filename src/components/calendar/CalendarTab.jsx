@@ -70,12 +70,13 @@ export default function CalendarTab() {
     return allEvents.filter((e) => e.event_date === targetDate);
   };
 
+  const todayIso = `${todayRef.getFullYear()}-${pad(todayRef.getMonth() + 1)}-${pad(todayRef.getDate())}`;
   const upcoming = useMemo(
     () =>
       [...allEvents]
-        .filter((e) => e.event_date)
+        .filter((e) => e.event_date && e.event_date >= todayIso)
         .sort((a, b) => a.event_date.localeCompare(b.event_date)),
-    [allEvents],
+    [allEvents, todayIso],
   );
 
   const editingService = editingServiceId
