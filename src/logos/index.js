@@ -12,6 +12,7 @@ import toss from "./toss.png";
 import tving from "./tving.jpg";
 import upstage from "./upstage.jpg";
 import watcha from "./watcha.png";
+import wavve from "./wavve.png";
 
 export const SERVICE_LOGOS = {
   "bank-salad": bankSalad,
@@ -28,6 +29,7 @@ export const SERVICE_LOGOS = {
   tving,
   upstage,
   watcha,
+  wavve,
 };
 
 const NAME_ALIASES = {
@@ -55,6 +57,8 @@ const NAME_ALIASES = {
   "banksalad": "bank-salad",
   "제미나이": "gemini",
   "제미니": "gemini",
+  "웨이브": "wavve",
+  "wavve": "wavve",
 };
 
 const normalize = (raw) =>

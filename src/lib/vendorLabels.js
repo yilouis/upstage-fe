@@ -6,6 +6,9 @@ const VENDOR_DISPLAY_NAMES = {
   toss: "토스",
   "coupang-play": "쿠팡플레이",
   "disney-plus": "디즈니+",
+  watcha: "왓챠",
+  tving: "티빙",
+  wavve: "웨이브",
 };
 
 export function getVendorDisplayName(service) {
