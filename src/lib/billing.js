@@ -76,9 +76,9 @@ const startOfDay = (d) =>
 
 // Derive mock events for a service across a month window.
 // - 구독 시작: single event on subscribedAt
-// - Recurring billing: one event per month in the window at billingDay
-//   (clamped to the month length). Kind is "prev" if the date is before
-//   today, otherwise "next".
+// - 정기 결제: one event per month in the window at billingDay
+//   (clamped to the month length). No past/future distinction —
+//   the calendar grid already shows the relationship to today.
 // Events whose billing date falls before subscribedAt are skipped.
 function deriveServiceEvents(service, record, today, monthsBefore, monthsAfter) {
   if (!record) return [];
@@ -99,7 +99,6 @@ function deriveServiceEvents(service, record, today, monthsBefore, monthsAfter) 
   if (!record.billingDay) return events;
 
   const day = Number(record.billingDay);
-  const todayMid = startOfDay(today);
   const subscribedDate = record.subscribedAt
     ? startOfDay(new Date(record.subscribedAt))
     : null;
@@ -113,15 +112,14 @@ function deriveServiceEvents(service, record, today, monthsBefore, monthsAfter) 
 
     if (subscribedDate && billingDate < subscribedDate) continue;
 
-    const isPast = billingDate < todayMid;
     events.push({
       id: `mock-${service.id}-bill-${year}-${pad(month + 1)}`,
       term_id: service.id,
       event_date: toIsoDate(billingDate),
-      event_type: isPast ? "지난 결제" : "다음 결제",
-      label: `${service.name} ${isPast ? "지난 결제" : "다음 결제"}`,
+      event_type: "정기 결제",
+      label: `${service.name} 정기 결제`,
       source: "mock",
-      kind: isPast ? "prev" : "next",
+      kind: "billing",
     });
   }
 
@@ -147,6 +145,5 @@ export function deriveMockEvents(
 
 export const EVENT_KIND_STYLES = {
   start: { dot: "bg-gray-400", badge: "bg-gray-50 text-gray-600 border-gray-200" },
-  prev: { dot: "bg-blue-300", badge: "bg-blue-50 text-blue-500 border-blue-100" },
-  next: { dot: "bg-blue-600", badge: "bg-blue-100 text-blue-700 border-blue-200" },
+  billing: { dot: "bg-blue-600", badge: "bg-blue-50 text-blue-600 border-blue-100" },
 };

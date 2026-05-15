@@ -70,13 +70,16 @@ export default function CalendarTab() {
     return allEvents.filter((e) => e.event_date === targetDate);
   };
 
-  const todayIso = `${todayRef.getFullYear()}-${pad(todayRef.getMonth() + 1)}-${pad(todayRef.getDate())}`;
   const upcoming = useMemo(
     () =>
       [...allEvents]
-        .filter((e) => e.event_date && e.event_date >= todayIso)
+        .filter(
+          (e) =>
+            typeof e.event_date === "string" &&
+            e.event_date.startsWith(currentMonthStr),
+        )
         .sort((a, b) => a.event_date.localeCompare(b.event_date)),
-    [allEvents, todayIso],
+    [allEvents, currentMonthStr],
   );
 
   const editingService = editingServiceId
@@ -196,12 +199,8 @@ export default function CalendarTab() {
               <span>구독 시작</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
-              <span>지난 결제</span>
-            </div>
-            <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-              <span>다음 결제</span>
+              <span>정기 결제</span>
             </div>
           </div>
         </div>
@@ -209,7 +208,7 @@ export default function CalendarTab() {
         {/* 다가오는 일정 리스트 (오른쪽 4칸) */}
         <div className="col-span-4 flex flex-col min-h-0">
           <h3 className="text-lg font-bold text-gray-900 ml-1 mb-4 shrink-0">
-            다가오는 일정
+            {cursor.month + 1}월 일정
           </h3>
           <div className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0">
             {upcoming.map((evt) => {
@@ -258,7 +257,7 @@ export default function CalendarTab() {
             {upcoming.length === 0 && (
               <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                 <p className="text-sm text-gray-400">
-                  등록된 일정이 없습니다.
+                  이 달에는 일정이 없습니다.
                 </p>
               </div>
             )}
