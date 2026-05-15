@@ -349,7 +349,7 @@ export default function SearchTab() {
       <div className="w-56 shrink-0 space-y-4 overflow-y-auto">
         <div className="bg-white rounded-2xl p-4 toss-card-shadow border border-gray-100">
           <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
-            📋 등록된 서비스
+            등록된 서비스
           </div>
           <ul className="space-y-1">
             {[...services]
@@ -389,7 +389,7 @@ export default function SearchTab() {
         {selectedService && !isTermLoading && versions.length > 0 && (
           <div className="bg-white rounded-2xl p-4 toss-card-shadow border border-gray-100">
             <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
-              📅 약관 버전 ({versions.length})
+              약관 버전 ({versions.length})
             </div>
             <ul className="space-y-1 max-h-64 overflow-y-auto">
               {versions.map((version, index) => (
