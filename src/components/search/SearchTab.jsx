@@ -72,7 +72,7 @@ export default function SearchTab() {
         setIsDisputeLoading(false);
       }
     };
-    
+
     fetchTermDetail();
     setChatMessages([]);
     setNewMessage("");
@@ -155,7 +155,7 @@ export default function SearchTab() {
       }
     }
     expandedKeywords = [...new Set(expandedKeywords)];
-    
+
     // 1단계: 확장된 키워드로 전체 필드 검색 (title, original_text, plain_text, clause_type)
     const matched = clauses.filter(clause => {
       const searchable = `${clause.clause_type || ''} ${clause.title || ''} ${clause.original_text || ''} ${clause.plain_text || ''}`.toLowerCase();
@@ -195,7 +195,7 @@ export default function SearchTab() {
   // 드래그 선택 시 해당 텍스트의 plain_text를 직접 찾기
   const findPlainTextForSelection = useCallback((text) => {
     if (!currentTermsVersion?.clauses || !text.trim()) return null;
-    
+
     const normalized = text.trim();
     for (const clause of currentTermsVersion.clauses) {
       if (clause.original_text && clause.original_text.includes(normalized)) {
@@ -339,28 +339,27 @@ export default function SearchTab() {
             {services.map((service) => {
               const logo = getServiceLogo(service);
               return (
-              <li
-                key={service.id}
-                onClick={() => {
-                  setSelectedService(service);
-                }}
-                className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition flex items-center gap-2 ${
-                  selectedService?.id === service.id
-                    ? "bg-blue-50 text-blue-600 font-semibold"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {logo ? (
-                  <img
-                    src={logo}
-                    alt=""
-                    className="w-5 h-5 rounded-md object-cover shrink-0"
-                  />
-                ) : (
-                  <span className="w-5 h-5 rounded-md bg-gray-100 shrink-0" />
-                )}
-                <span className="truncate">{service.name}</span>
-              </li>
+                <li
+                  key={service.id}
+                  onClick={() => {
+                    setSelectedService(service);
+                  }}
+                  className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition flex items-center gap-2 ${selectedService?.id === service.id
+                      ? "bg-blue-50 text-blue-600 font-semibold"
+                      : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                >
+                  {logo ? (
+                    <img
+                      src={logo}
+                      alt=""
+                      className="w-5 h-5 rounded-md object-cover shrink-0"
+                    />
+                  ) : (
+                    <span className="w-5 h-5 rounded-md bg-gray-100 shrink-0" />
+                  )}
+                  <span className="truncate">{service.name}</span>
+                </li>
               );
             })}
             {services.length === 0 && (
@@ -379,11 +378,10 @@ export default function SearchTab() {
                 <li
                   key={version.id || index}
                   onClick={() => setSelectedVersionIndex(index)}
-                  className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition ${
-                    selectedVersionIndex === index
+                  className={`px-3 py-2 rounded-xl cursor-pointer text-sm transition ${selectedVersionIndex === index
                       ? "bg-blue-50 text-blue-600 font-semibold border-l-4 border-blue-600"
                       : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <div className="text-xs text-gray-500">
                     {version.dateLabel} · {version.date || "-"}
@@ -401,11 +399,11 @@ export default function SearchTab() {
         {/* Main Content */}
         {selectedService ? (
           isTermLoading ? (
-             <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
+            <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 flex items-center justify-center">
               <p className="text-gray-400 animate-pulse">약관을 불러오는 중입니다...</p>
             </div>
           ) : currentTermsVersion ? (
-            <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 flex flex-col overflow-hidden">
               <div className="border-b border-gray-100 p-6 bg-gradient-to-r from-blue-50 to-white">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {selectedService.name}
@@ -608,7 +606,7 @@ export default function SearchTab() {
         )}
 
         {/* Right Chat Sidebar */}
-        <div className="w-80 shrink-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+        <div className="w-80 shrink-0 bg-white rounded-[32px] border border-gray-100 flex flex-col overflow-hidden">
           <div className="border-b border-gray-100 p-4 bg-gray-50 shrink-0">
             <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
               💬 약관 검색
@@ -640,16 +638,14 @@ export default function SearchTab() {
                 {chatMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`flex ${
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+                      }`}
                   >
                     <div
-                      className={`max-w-[90%] min-w-0 px-4 py-3 text-sm leading-relaxed break-words ${
-                        msg.role === "user"
+                      className={`max-w-[90%] min-w-0 px-4 py-3 text-sm leading-relaxed break-words ${msg.role === "user"
                           ? "bg-blue-500 text-white rounded-2xl rounded-br-none shadow-sm"
                           : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200 whitespace-pre-wrap"
-                      }`}
+                        }`}
                     >
                       {msg.role === "ai" && (
                         <div className="font-bold text-[10px] text-gray-400 mb-1">
