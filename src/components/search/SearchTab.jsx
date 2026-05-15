@@ -338,7 +338,9 @@ export default function SearchTab() {
             📋 등록된 서비스
           </div>
           <ul className="space-y-1">
-            {services.map((service) => {
+            {[...services]
+              .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"))
+              .map((service) => {
               const logo = getServiceLogo(service);
               return (
                 <li

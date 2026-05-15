@@ -20,11 +20,13 @@ export default function DashboardTab() {
 
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const currentServices = services.filter(
-    (s) =>
-      (!selectedCategory || s.category === selectedCategory) &&
-      (selectedSector === "전체" || s.sector === selectedSector),
-  );
+  const currentServices = services
+    .filter(
+      (s) =>
+        (!selectedCategory || s.category === selectedCategory) &&
+        (selectedSector === "전체" || s.sector === selectedSector),
+    )
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"));
 
   return (
     <>
