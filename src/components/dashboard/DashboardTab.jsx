@@ -3,6 +3,7 @@ import { useApp } from "../../AppContext";
 import AddServiceModal from "./AddServiceModal";
 import { FileText, Plus } from "lucide-react";
 import { getServiceLogo } from "../../logos";
+import { getDomainLabel } from "../../lib/domainLabels";
 
 export default function DashboardTab() {
   const {
@@ -105,7 +106,7 @@ export default function DashboardTab() {
                 className="bg-white relative p-6 rounded-[24px] toss-card-shadow cursor-pointer hover:-translate-y-1 transition duration-300 border border-gray-100 group"
               >
                 <div className="absolute top-4 right-4 text-xs font-semibold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
-                  {s.category}
+                  {getDomainLabel(s.category)}
                 </div>
                 <div className="w-12 h-12 rounded-full bg-gray-50 overflow-hidden flex items-center justify-center mb-4 group-hover:bg-blue-50 transition cursor-grab active:cursor-grabbing">
                   {logo ? (

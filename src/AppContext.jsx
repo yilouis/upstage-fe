@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api } from "./lib/api";
 import { DEFAULT_USER_ID } from "./config";
+import { getDomainLabel } from "./lib/domainLabels";
 
 const AppContext = createContext();
 
@@ -99,7 +100,7 @@ export const AppProvider = ({ children }) => {
         if (!categoryMap[domain]) {
           categoryMap[domain] = {
             id: domain,
-            name: domain,
+            name: getDomainLabel(domain),
             count: 0,
             sectors: ["전체"]
           };
@@ -190,7 +191,7 @@ export const AppProvider = ({ children }) => {
         if (existing) {
           return prev.map(c => c.id === item.category ? { ...c, count: c.count + 1 } : c);
         }
-        return [...prev, { id: item.category, name: item.category, count: 1, sectors: ["전체"] }];
+        return [...prev, { id: item.category, name: getDomainLabel(item.category), count: 1, sectors: ["전체"] }];
       });
     }
   };

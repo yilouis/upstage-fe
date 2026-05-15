@@ -1,3 +1,5 @@
+import { getDomainLabel } from "../../lib/domainLabels";
+
 export default function DashboardView({
   terms,
   loading,
@@ -24,7 +26,7 @@ export default function DashboardView({
               onClick={() => onOpenSearch(term.id)}
             >
               <h3>{term.service_name}</h3>
-              <p>도메인: {term.domain}</p>
+              <p>도메인: {getDomainLabel(term.domain)}</p>
               <p>상태: {term.status}</p>
               <p>최신 버전: v{term.latest_version}</p>
               <p>가입일: {term.subscribed_at || "-"}</p>
