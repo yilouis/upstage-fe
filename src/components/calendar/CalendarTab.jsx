@@ -213,61 +213,61 @@ export default function CalendarTab() {
           <h3 className="text-lg font-bold text-gray-900 ml-1 mb-4 shrink-0">
             {cursor.month + 1}월 일정
           </h3>
-          <div
-            className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0"
-            style={{ scrollbarGutter: "stable" }}
-          >
-            {upcoming.map((evt) => {
-              const service = services.find((s) => s.id === evt.term_id);
-              const style = EVENT_KIND_STYLES[evt.kind] || {
-                badge: "bg-blue-50 text-blue-600 border-blue-100",
-              };
-              const editable = evt.source === "mock" && service;
-              return (
-                <div
-                  key={evt.id}
-                  className={`group bg-white p-5 rounded-2xl border border-gray-100 toss-card-shadow flex items-start gap-4 transition ${
-                    editable
-                      ? "hover:border-blue-200 cursor-pointer"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    if (editable) setEditingServiceId(service.id);
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                    <CalendarDays className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[11px] font-bold text-blue-500">
-                        {evt.event_date}
-                      </span>
-                      <span
-                        className={`text-[10px] font-semibold border rounded-full px-2 py-0.5 ${style.badge}`}
-                      >
-                        {evt.event_type}
-                      </span>
+          {upcoming.length > 0 ? (
+            <div
+              className="space-y-3 overflow-y-auto pr-2 flex-1 min-h-0"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              {upcoming.map((evt) => {
+                const service = services.find((s) => s.id === evt.term_id);
+                const style = EVENT_KIND_STYLES[evt.kind] || {
+                  badge: "bg-blue-50 text-blue-600 border-blue-100",
+                };
+                const editable = evt.source === "mock" && service;
+                return (
+                  <div
+                    key={evt.id}
+                    className={`group bg-white p-5 rounded-2xl border border-gray-100 toss-card-shadow flex items-start gap-4 transition ${
+                      editable
+                        ? "hover:border-blue-200 cursor-pointer"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (editable) setEditingServiceId(service.id);
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                      <CalendarDays className="w-5 h-5 text-blue-500" />
                     </div>
-                    <div className="text-sm font-bold text-gray-800 truncate">
-                      {service?.name || evt.label || "알 수 없는 서비스"}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[11px] font-bold text-blue-500">
+                          {evt.event_date}
+                        </span>
+                        <span
+                          className={`text-[10px] font-semibold border rounded-full px-2 py-0.5 ${style.badge}`}
+                        >
+                          {evt.event_type}
+                        </span>
+                      </div>
+                      <div className="text-sm font-bold text-gray-800 truncate">
+                        {service?.name || evt.label || "알 수 없는 서비스"}
+                      </div>
                     </div>
+                    {editable && (
+                      <Pencil className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition shrink-0 mt-1" />
+                    )}
                   </div>
-                  {editable && (
-                    <Pencil className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition shrink-0 mt-1" />
-                  )}
-                </div>
-              );
-            })}
-
-            {upcoming.length === 0 && (
-              <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                <p className="text-sm text-gray-400">
-                  이 달에는 일정이 없습니다.
-                </p>
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mx-1 text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+              <p className="text-sm text-gray-400">
+                이 달에는 일정이 없습니다.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
