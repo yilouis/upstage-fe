@@ -35,17 +35,19 @@ export const api = {
       `/v1/terms/${termId}/disputes?top_k=${encodeURIComponent(topK)}`,
     ),
 
-  uploadTerm: ({ serviceName, subscribedAt, file }) => {
+  uploadTerm: ({ serviceName, subscribedAt, effectiveDate, file }) => {
     const formData = new FormData();
     formData.append("service_name", serviceName);
     if (subscribedAt) formData.append("subscribed_at", subscribedAt);
+    if (effectiveDate) formData.append("effective_date", effectiveDate);
     formData.append("file", file);
     return request("/terms/upload", { method: "POST", body: formData });
   },
 
-  updateTerm: ({ termId, file }) => {
+  updateTerm: ({ termId, file, effectiveDate }) => {
     const formData = new FormData();
     formData.append("file", file);
+    if (effectiveDate) formData.append("effective_date", effectiveDate);
     return request(`/terms/${termId}/update`, {
       method: "POST",
       body: formData,

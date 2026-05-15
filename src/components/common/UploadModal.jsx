@@ -10,6 +10,7 @@ export default function UploadModal({
 }) {
   const [serviceName, setServiceName] = useState("");
   const [subscribedAt, setSubscribedAt] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState("");
   const [file, setFile] = useState(null);
 
   if (!open) return null;
@@ -17,7 +18,12 @@ export default function UploadModal({
   const handleSubmit = () => {
     if (withServiceName && !serviceName.trim()) return;
     if (!file) return;
-    onSubmit({ serviceName: serviceName.trim(), subscribedAt, file });
+    onSubmit({
+      serviceName: serviceName.trim(),
+      subscribedAt,
+      effectiveDate: effectiveDate || undefined,
+      file,
+    });
   };
 
   return (
@@ -42,6 +48,14 @@ export default function UploadModal({
             onChange={(e) => setSubscribedAt(e.target.value)}
           />
         )}
+        <input
+          name="effectiveDate"
+          id="effectiveDate"
+          type="date"
+          placeholder="시행일"
+          value={effectiveDate}
+          onChange={(e) => setEffectiveDate(e.target.value)}
+        />
         <input
           name="termFile"
           id="termFile"

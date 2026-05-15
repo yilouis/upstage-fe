@@ -27,6 +27,7 @@ export default function AddServiceModal({ onClose }) {
 
   const [serviceName, setServiceName] = useState("");
   const [serviceUrl, setServiceUrl] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const fileInputRef = useRef(null);
@@ -112,6 +113,7 @@ export default function AddServiceModal({ onClose }) {
         serviceName,
         file: fileToSend,
         subscribedAt: new Date().toISOString().split("T")[0],
+        effectiveDate: effectiveDate || undefined,
       });
 
       if (response?.id) {
@@ -284,6 +286,19 @@ export default function AddServiceModal({ onClose }) {
                     </>
                   )}
                 </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  약관 시행일 <span className="text-gray-400 font-normal">(선택)</span>
+                </label>
+                <input
+                  type="date"
+                  name="effective_date"
+                  value={effectiveDate}
+                  onChange={(e) => setEffectiveDate(e.target.value)}
+                  className="w-full bg-white border border-gray-200 focus:border-blue-500 outline-none rounded-xl px-4 py-3 transition"
+                />
               </div>
 
               <button

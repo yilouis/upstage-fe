@@ -89,10 +89,12 @@ export default function SearchTab() {
     if (!termDetails?.versions) return [];
     return [...termDetails.versions].sort((a, b) => b.version - a.version).map(v => {
       const fullText = v.clauses?.map(c => `${c.title || ""}\n${c.original_text || ""}`).join("\n\n") || "내용이 없습니다.";
+      const dateSource = v.effective_date || v.created_at;
       return {
         id: v.id,
         version: v.version,
-        date: new Date(v.created_at).toISOString().split('T')[0],
+        date: dateSource ? new Date(dateSource).toISOString().split('T')[0] : "",
+        dateLabel: v.effective_date ? "시행일" : "업로드일",
         title: v.is_latest ? "최신 약관" : `버전 ${v.version}`,
         content: fullText,
         clauses: v.clauses || [],
@@ -383,7 +385,9 @@ export default function SearchTab() {
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  <div className="text-xs text-gray-500">{version.date}</div>
+                  <div className="text-xs text-gray-500">
+                    {version.dateLabel} · {version.date || "-"}
+                  </div>
                   <div className="font-medium">{version.title}</div>
                 </li>
               ))}
@@ -407,7 +411,7 @@ export default function SearchTab() {
                   {selectedService.name}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {currentTermsVersion.title} • {currentTermsVersion.date}
+                  {currentTermsVersion.title} • {currentTermsVersion.dateLabel} {currentTermsVersion.date || "-"}
                 </p>
                 {currentTermsVersion.summary && (
                   <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3">

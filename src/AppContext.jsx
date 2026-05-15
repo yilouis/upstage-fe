@@ -204,8 +204,8 @@ export const AppProvider = ({ children }) => {
   };
 
   // 새 서비스 업로드 (PDF) → 업로드 후 자동 구독
-  const addService = async ({ serviceName, file, subscribedAt }) => {
-    const response = await api.uploadTerm({ serviceName, file, subscribedAt });
+  const addService = async ({ serviceName, file, subscribedAt, effectiveDate }) => {
+    const response = await api.uploadTerm({ serviceName, file, subscribedAt, effectiveDate });
     // 업로드 성공 시 자동 구독
     if (response?.id) {
       const newIds = [...subscribedIds, response.id];
