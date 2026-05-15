@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from "./lib/api";
 import { DEFAULT_USER_ID } from "./config";
 import { getDomainLabel } from "./lib/domainLabels";
+import {
+  loadBilling,
+  saveBilling,
+  seedDefaultsForServices,
+  updateBillingRecord,
+} from "./lib/billing";
 
 const AppContext = createContext();
 
@@ -71,6 +77,27 @@ export const AppProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [billing, setBilling] = useState(loadBilling);
+
+  // Seed default mock billing for OTT services (Netflix, Spotify) on first
+  // appearance. Persists to localStorage so seeding only happens once per
+  // service.
+  useEffect(() => {
+    if (services.length === 0) return;
+    const { data, changed } = seedDefaultsForServices(services, billing);
+    if (changed) {
+      setBilling(data);
+      saveBilling(data);
+    }
+  }, [services, billing]);
+
+  const updateBilling = (serviceId, patch) => {
+    setBilling((prev) => {
+      const next = updateBillingRecord(prev, serviceId, patch);
+      saveBilling(next);
+      return next;
+    });
+  };
 
   // 카탈로그 fetch (DB의 모든 약관)
   const fetchCatalog = useCallback(async () => {
@@ -266,6 +293,7 @@ export const AppProvider = ({ children }) => {
         selectedVersionIndex, setSelectedVersionIndex,
         notifications, deleteNotification, markAllNotificationsRead,
         calendarEvents, fetchCalendar,
+        billing, updateBilling,
       }}
     >
       {children}
