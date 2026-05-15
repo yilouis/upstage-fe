@@ -175,6 +175,17 @@ export const AppProvider = ({ children }) => {
     fetchNotifications();
   }, [fetchCatalog, fetchNotifications]);
 
+  // 카테고리 삭제 (로컬, 사용자 추가한 것만)
+  const removeCategory = (categoryId) => {
+    setCustomCategories((prev) => {
+      const next = prev.filter((c) => c.id !== categoryId);
+      saveCustomCategories(next);
+      return next;
+    });
+    setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+    setSelectedCategory((prev) => (prev === categoryId ? "" : prev));
+  };
+
   // 카테고리 추가 (로컬)
   const addCategory = (categoryName) => {
     const trimmedName = categoryName.trim();
@@ -289,6 +300,7 @@ export const AppProvider = ({ children }) => {
         unsubscribeService,
         subscribedIds,
         addCategory,
+        removeCategory,
         sidebarOpen, setSidebarOpen,
         selectedVersionIndex, setSelectedVersionIndex,
         notifications, deleteNotification, markAllNotificationsRead,

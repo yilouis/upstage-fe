@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../../AppContext";
-import { Plus, Search, Calendar } from "lucide-react";
+import { Plus, Search, Calendar, X } from "lucide-react";
 
 export default function Sidebar() {
   const {
@@ -11,6 +11,7 @@ export default function Sidebar() {
     setSelectedSector,
     categories,
     addCategory,
+    removeCategory,
     sidebarOpen,
   } = useApp();
 
@@ -50,16 +51,33 @@ export default function Sidebar() {
                   setSelectedSector("전체");
                   setView("dashboard");
                 }}
-                className={`flex justify-between items-center px-4 py-3 rounded-2xl cursor-pointer transition ${
+                className={`group flex justify-between items-center px-4 py-3 rounded-2xl cursor-pointer transition ${
                   selectedCategory === c.id && view === "dashboard"
                     ? "bg-blue-50 text-blue-600 font-semibold"
                     : "hover:bg-gray-50 text-gray-700"
                 }`}
               >
-                <span>{c.name}</span>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
-                  {c.count}
-                </span>
+                <span className="truncate">{c.name}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
+                    {c.count}
+                  </span>
+                  {c.isCustom && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`"${c.name}" 카테고리를 삭제하시겠어요? (서비스는 유지됩니다)`)) {
+                          removeCategory(c.id);
+                        }
+                      }}
+                      aria-label={`${c.name} 카테고리 삭제`}
+                      className="opacity-0 group-hover:opacity-100 transition w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
             <li
