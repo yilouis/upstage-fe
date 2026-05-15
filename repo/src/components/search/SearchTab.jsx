@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useApp } from "../../AppContext";
 import { Sparkles } from "lucide-react";
 import { api } from "../../lib/api";
@@ -58,15 +58,96 @@ export default function SearchTab() {
       const fullText = v.clauses?.map(c => `${c.title || ""}\n${c.original_text || ""}`).join("\n\n") || "내용이 없습니다.";
       return {
         id: v.id,
+        version: v.version,
         date: new Date(v.created_at).toISOString().split('T')[0],
-        title: v.is_latest ? "최신 가입 약관" : `버전 ${v.version}`,
+        title: v.is_latest ? "최신 약관" : `버전 ${v.version}`,
         content: fullText,
+        clauses: v.clauses || [],
+        summary: v.summary,
+        diffSummary: v.diff_summary,
       };
     });
   };
 
   const versions = getTermsVersions();
   const currentTermsVersion = versions[selectedVersionIndex] || null;
+
+  // 로컬 검색: 약관 조항(clauses)에서 관련 내용 찾기
+  const localSearch = useCallback((query) => {
+    if (!currentTermsVersion?.clauses || currentTermsVersion.clauses.length === 0) {
+      return null;
+    }
+
+    // 영어 clause_type → 한국어 키워드 매핑
+    const typeKeywordMap = {
+      'payment': ['결제', '구독료', '요금', '청구', 'payment'],
+      'cancellation': ['해지', '취소', '해약', '탈퇴', 'cancel', 'cancellation'],
+      'privacy': ['개인정보', '프라이버시', '정보처리', 'privacy'],
+      'refund': ['환불', '반환', 'refund'],
+      'liability': ['책임', '면책', '배상', 'liability'],
+      'termination': ['종료', '만료', '해지', 'termination'],
+    };
+
+    const normalizedQuery = query.toLowerCase().replace(/["""]/g, '').trim();
+    const clauses = currentTermsVersion.clauses;
+
+    // 쿼리 키워드 확장: 영어→한국어 매핑 적용
+    let expandedKeywords = [normalizedQuery];
+    for (const [type, keywords] of Object.entries(typeKeywordMap)) {
+      if (keywords.some(kw => normalizedQuery.includes(kw)) || normalizedQuery.includes(type)) {
+        expandedKeywords = [...expandedKeywords, ...keywords];
+      }
+    }
+    expandedKeywords = [...new Set(expandedKeywords)];
+    
+    // 1단계: 확장된 키워드로 전체 필드 검색 (title, original_text, plain_text, clause_type)
+    const matched = clauses.filter(clause => {
+      const searchable = `${clause.clause_type || ''} ${clause.title || ''} ${clause.original_text || ''} ${clause.plain_text || ''}`.toLowerCase();
+      return expandedKeywords.some(kw => searchable.includes(kw));
+    });
+
+    const formatClause = (clause) => {
+      let answer = '';
+      if (clause.title) answer += `📌 ${clause.title}\n\n`;
+      answer += `📄 원문:\n${clause.original_text || '(원문 없음)'}\n\n`;
+      if (clause.plain_text) {
+        answer += `💡 쉬운 해석:\n${clause.plain_text}`;
+      }
+      return answer;
+    };
+
+    if (matched.length > 0) {
+      return matched.map(formatClause).join('\n\n---\n\n');
+    }
+
+    // 2단계: 부분 키워드 매칭 (각 단어를 개별 검색, 1글자도 허용)
+    const keywords = normalizedQuery.split(/\s+/).filter(k => k.length >= 1);
+    if (keywords.length > 0) {
+      const partialMatched = clauses.filter(clause => {
+        const searchable = `${clause.clause_type || ''} ${clause.title || ''} ${clause.original_text || ''} ${clause.plain_text || ''}`.toLowerCase();
+        return keywords.some(kw => searchable.includes(kw));
+      });
+
+      if (partialMatched.length > 0) {
+        return partialMatched.slice(0, 3).map(formatClause).join('\n\n---\n\n');
+      }
+    }
+
+    return null;
+  }, [currentTermsVersion]);
+
+  // 드래그 선택 시 해당 텍스트의 plain_text를 직접 찾기
+  const findPlainTextForSelection = useCallback((text) => {
+    if (!currentTermsVersion?.clauses || !text.trim()) return null;
+    
+    const normalized = text.trim();
+    for (const clause of currentTermsVersion.clauses) {
+      if (clause.original_text && clause.original_text.includes(normalized)) {
+        return clause.plain_text || null;
+      }
+    }
+    return null;
+  }, [currentTermsVersion]);
 
   const processMessage = async (textToSend) => {
     if (!textToSend.trim() || !selectedService?.id) return;
@@ -76,19 +157,32 @@ export default function SearchTab() {
     setIsLoading(true);
 
     try {
-      const res = await api.searchTerm({ termId: selectedService.id, query: textToSend, topK: 1 });
-      
-      let answer = "해당 약관에서 관련된 내용을 찾을 수 없습니다.";
-      if (res.results && res.results.length > 0) {
-        // API returns chunks. We present the best matched chunk content.
-        const chunk = res.results[0];
-        answer = `다음 약관 조항과 관련이 있을 수 있습니다:\n\n${chunk.content}`;
+      // 1차: 서버 검색 API 시도
+      let answer = null;
+      try {
+        const res = await api.searchTerm({ termId: selectedService.id, query: textToSend, topK: 3 });
+        if (res.results && res.results.length > 0) {
+          answer = res.results.map((chunk, i) => 
+            `📄 관련 조항 ${i + 1}:\n${chunk.content}`
+          ).join('\n\n---\n\n');
+        }
+      } catch (serverErr) {
+        console.warn("Server search failed, falling back to local search:", serverErr.message);
+      }
+
+      // 2차: 서버 실패 시 로컬 검색 fallback
+      if (!answer) {
+        answer = localSearch(textToSend);
+      }
+
+      if (!answer) {
+        answer = "해당 약관에서 관련된 내용을 찾을 수 없습니다. 다른 키워드로 검색해 보세요.";
       }
 
       setChatMessages((prev) => [...prev, { role: "ai", content: answer }]);
     } catch (e) {
       console.error(e);
-      setChatMessages((prev) => [...prev, { role: "ai", content: "검색 중 오류가 발생했습니다." }]);
+      setChatMessages((prev) => [...prev, { role: "ai", content: "검색 중 오류가 발생했습니다. 다시 시도해 주세요." }]);
     } finally {
       setIsLoading(false);
     }
@@ -122,8 +216,17 @@ export default function SearchTab() {
     e.preventDefault();
     e.stopPropagation();
 
-    const question = `"${selectedText}"에 대한 내용 찾아줘`;
-    processMessage(question);
+    // 먼저 로컬에서 plain_text를 직접 찾기
+    const plainText = findPlainTextForSelection(selectedText);
+    if (plainText) {
+      const userMsg = { role: "user", content: `"${selectedText}" 이 부분이 무슨 뜻이야?` };
+      const aiMsg = { role: "ai", content: `💡 쉬운 해석:\n${plainText}` };
+      setChatMessages(prev => [...prev, userMsg, aiMsg]);
+    } else {
+      // plain_text가 없으면 일반 검색으로 fallback
+      const question = `"${selectedText}"에 대한 내용 찾아줘`;
+      processMessage(question);
+    }
 
     setShowTooltip(false);
     window.getSelection()?.removeAllRanges();
@@ -138,7 +241,7 @@ export default function SearchTab() {
           onMouseDown={handleTranslateClick}
         >
           <Sparkles className="w-4 h-4 text-yellow-300" />
-          <span className="font-semibold tracking-wide">약관 검색</span>
+          <span className="font-semibold tracking-wide">쉬운 해석</span>
           <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gray-900 rotate-45"></div>
         </div>
       )}
@@ -213,14 +316,53 @@ export default function SearchTab() {
                 <p className="text-sm text-gray-500 mt-1">
                   {currentTermsVersion.title} • {currentTermsVersion.date}
                 </p>
+                {currentTermsVersion.summary && (
+                  <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                    <p className="text-xs font-bold text-yellow-700 mb-1">📋 약관 요약</p>
+                    <p className="text-sm text-yellow-800">{currentTermsVersion.summary}</p>
+                  </div>
+                )}
+                {currentTermsVersion.diffSummary && (
+                  <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                    <p className="text-xs font-bold text-orange-700 mb-1">🔄 이전 버전 대비 변경사항</p>
+                    <p className="text-sm text-orange-800">{currentTermsVersion.diffSummary}</p>
+                  </div>
+                )}
               </div>
               <div
                 className="flex-1 overflow-y-auto p-8 relative"
                 onMouseUp={handleMouseUp}
               >
-                <div className="text-gray-700 leading-relaxed whitespace-pre-wrap selection:bg-blue-200">
-                  {currentTermsVersion.content}
-                </div>
+                {/* 조항별 렌더링 */}
+                {currentTermsVersion.clauses.length > 0 ? (
+                  <div className="space-y-6">
+                    {currentTermsVersion.clauses.map((clause, idx) => (
+                      <div key={clause.id || idx} className="group">
+                        {clause.title && (
+                          <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md font-semibold">
+                              {clause.clause_type}
+                            </span>
+                            {clause.title}
+                          </h3>
+                        )}
+                        <div className="text-gray-700 leading-relaxed whitespace-pre-wrap selection:bg-blue-200 pl-2 border-l-2 border-gray-200 group-hover:border-blue-400 transition">
+                          {clause.original_text}
+                        </div>
+                        {clause.plain_text && (
+                          <div className="mt-2 bg-gray-50 rounded-xl p-3 text-sm text-gray-600 border border-gray-100">
+                            <span className="text-xs font-bold text-gray-400 block mb-1">💡 쉬운 해석</span>
+                            {clause.plain_text}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap selection:bg-blue-200">
+                    {currentTermsVersion.content}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -230,7 +372,11 @@ export default function SearchTab() {
           )
         ) : (
           <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
-            <p className="text-gray-400">서비스를 선택해주세요.</p>
+            <div className="text-center">
+              <p className="text-6xl mb-4">📄</p>
+              <p className="text-gray-500 text-lg font-medium">서비스를 선택해주세요</p>
+              <p className="text-gray-400 text-sm mt-1">왼쪽 목록에서 약관을 확인할 서비스를 선택하세요</p>
+            </div>
           </div>
         )}
 
@@ -250,10 +396,16 @@ export default function SearchTab() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {chatMessages.length === 0 && !isLoading ? (
               <div className="text-center text-gray-400 py-10">
+                <p className="text-3xl mb-3">🔍</p>
                 <p className="text-sm">
-                  약관을 드래그하거나
+                  약관 내용을 <strong>드래그</strong>하면
                   <br />
-                  직접 검색어를 입력해 보세요.
+                  쉬운 해석을 볼 수 있어요.
+                  <br />
+                  <br />
+                  또는 궁금한 점을
+                  <br />
+                  직접 검색해 보세요.
                 </p>
               </div>
             ) : (
@@ -274,7 +426,7 @@ export default function SearchTab() {
                     >
                       {msg.role === "ai" && (
                         <div className="font-bold text-[10px] text-gray-400 mb-1">
-                          SEARCH RESULT
+                          AI 답변
                         </div>
                       )}
                       {msg.content}
@@ -316,7 +468,7 @@ export default function SearchTab() {
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 placeholder={
                   selectedService && !isTermLoading
-                    ? "검색어를 입력하세요..."
+                    ? "예: 해지 방법, 환불 규정 ..."
                     : "서비스를 먼저 선택하세요"
                 }
                 disabled={!selectedService || isLoading || isTermLoading}
