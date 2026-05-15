@@ -35,6 +35,8 @@ export default function SearchTab() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showSummary, setShowSummary] = useState(true);
+  const [showDiffSummary, setShowDiffSummary] = useState(true);
 
   useEffect(() => {
     const fetchTermDetail = async () => {
@@ -409,14 +411,44 @@ export default function SearchTab() {
                 </p>
                 {currentTermsVersion.summary && (
                   <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                    <p className="text-xs font-bold text-yellow-700 mb-1">📋 약관 요약</p>
-                    <p className="text-sm text-yellow-800">{currentTermsVersion.summary}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowSummary((v) => !v)}
+                      className="w-full flex items-center justify-between group"
+                      aria-expanded={showSummary}
+                      aria-label={showSummary ? "약관 요약 접기" : "약관 요약 펼치기"}
+                    >
+                      <p className="text-xs font-bold text-yellow-700">📋 약관 요약</p>
+                      {showSummary ? (
+                        <ChevronUp className="w-4 h-4 text-yellow-700" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-yellow-700" />
+                      )}
+                    </button>
+                    {showSummary && (
+                      <p className="mt-1 text-sm text-yellow-800">{currentTermsVersion.summary}</p>
+                    )}
                   </div>
                 )}
                 {currentTermsVersion.diffSummary && (
                   <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl p-3">
-                    <p className="text-xs font-bold text-orange-700 mb-1">🔄 이전 버전 대비 변경사항</p>
-                    <p className="text-sm text-orange-800">{currentTermsVersion.diffSummary}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowDiffSummary((v) => !v)}
+                      className="w-full flex items-center justify-between group"
+                      aria-expanded={showDiffSummary}
+                      aria-label={showDiffSummary ? "이전 버전 대비 변경사항 접기" : "이전 버전 대비 변경사항 펼치기"}
+                    >
+                      <p className="text-xs font-bold text-orange-700">🔄 이전 버전 대비 변경사항</p>
+                      {showDiffSummary ? (
+                        <ChevronUp className="w-4 h-4 text-orange-700" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-orange-700" />
+                      )}
+                    </button>
+                    {showDiffSummary && (
+                      <p className="mt-1 text-sm text-orange-800">{currentTermsVersion.diffSummary}</p>
+                    )}
                   </div>
                 )}
               </div>
