@@ -351,7 +351,10 @@ export default function SearchTab() {
           <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
             등록된 서비스
           </div>
-          <ul className="space-y-1">
+          <ul
+            className="space-y-1 max-h-[240px] overflow-y-auto pr-1"
+            style={{ scrollbarGutter: "stable" }}
+          >
             {[...services]
               .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"))
               .map((service) => {
