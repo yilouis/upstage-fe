@@ -441,7 +441,7 @@ export default function SearchTab() {
                       aria-expanded={showSummary}
                       aria-label={showSummary ? "약관 요약 접기" : "약관 요약 펼치기"}
                     >
-                      <span className="text-xs font-bold text-yellow-700">📋 약관 요약</span>
+                      <span className="text-xs font-bold text-yellow-700">약관 요약</span>
                       {showSummary ? (
                         <ChevronUp className="w-4 h-4 text-yellow-700" />
                       ) : (
@@ -462,7 +462,7 @@ export default function SearchTab() {
                       aria-expanded={showDiffSummary}
                       aria-label={showDiffSummary ? "이전 버전 대비 변경사항 접기" : "이전 버전 대비 변경사항 펼치기"}
                     >
-                      <span className="text-xs font-bold text-orange-700">🔄 이전 버전 대비 변경사항</span>
+                      <span className="text-xs font-bold text-orange-700">이전 버전 대비 변경사항</span>
                       {showDiffSummary ? (
                         <ChevronUp className="w-4 h-4 text-orange-700" />
                       ) : (
