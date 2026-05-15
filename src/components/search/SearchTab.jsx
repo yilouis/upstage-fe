@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useApp } from "../../AppContext";
-import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { api } from "../../lib/api";
 import { DEFAULT_USER_ID } from "../../config";
 import { getServiceLogo } from "../../logos";
@@ -588,6 +588,13 @@ export default function SearchTab() {
                     </div>
                   )}
                 </div>
+
+                <div className="mt-10 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs leading-relaxed text-amber-800">
+                    이 페이지의 요약·쉬운 해석·분쟁 가능성 분석은 모두 AI가 생성한 참고 자료입니다. 법적 효력이 없으며, 실제 권리·의무는 반드시 원문 약관과 관련 법령을 확인해주세요.
+                  </p>
+                </div>
               </div>
             </div>
           ) : (
@@ -632,6 +639,12 @@ export default function SearchTab() {
                   <br />
                   직접 검색해 보세요.
                 </p>
+                <div className="mt-6 mx-2 flex items-start gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-2 text-left">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] leading-snug text-amber-800">
+                    AI 답변은 참고용이며 법적 효력이 없습니다. 정확한 내용은 원본 약관을 확인해주세요.
+                  </p>
+                </div>
               </div>
             ) : (
               <>
