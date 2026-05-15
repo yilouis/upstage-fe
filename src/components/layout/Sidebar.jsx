@@ -59,9 +59,6 @@ export default function Sidebar() {
               >
                 <span className="truncate">{c.name}</span>
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
-                    {c.count}
-                  </span>
                   {c.isCustom && (
                     <button
                       type="button"
@@ -77,6 +74,9 @@ export default function Sidebar() {
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
+                    {c.count}
+                  </span>
                 </div>
               </li>
             ))}
