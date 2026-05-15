@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useApp } from "../../AppContext";
 import { Sparkles, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "../../lib/api";
 import { DEFAULT_USER_ID } from "../../config";
 import { getServiceLogo } from "../../logos";
@@ -656,8 +658,8 @@ export default function SearchTab() {
                   >
                     <div
                       className={`max-w-[90%] min-w-0 px-4 py-3 text-sm leading-relaxed break-words ${msg.role === "user"
-                          ? "bg-blue-500 text-white rounded-2xl rounded-br-none shadow-sm"
-                          : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200 whitespace-pre-wrap"
+                          ? "bg-blue-500 text-white rounded-2xl rounded-br-none shadow-sm whitespace-pre-wrap"
+                          : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200"
                         }`}
                     >
                       {msg.role === "ai" && (
@@ -665,7 +667,15 @@ export default function SearchTab() {
                           AI 답변
                         </div>
                       )}
-                      {msg.content}
+                      {msg.role === "ai" ? (
+                        <div className="markdown-chat">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 ))}
