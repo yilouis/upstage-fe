@@ -18,6 +18,8 @@ export default function SearchTab() {
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTermLoading, setIsTermLoading] = useState(false);
+  const [disputeClauses, setDisputeClauses] = useState([]);
+  const [isDisputeLoading, setIsDisputeLoading] = useState(false);
   const chatEndRef = useRef(null);
   const [chatSessionId, setChatSessionId] = useState(null);
 
@@ -29,9 +31,13 @@ export default function SearchTab() {
     const fetchTermDetail = async () => {
       if (!selectedService?.id) {
         setTermDetails(null);
+        setDisputeClauses([]);
+        setIsDisputeLoading(false);
         return;
       }
       setIsTermLoading(true);
+      setIsDisputeLoading(true);
+      setDisputeClauses([]);
       try {
         const detail = await api.getTerm(selectedService.id);
         setTermDetails(detail);
@@ -40,6 +46,19 @@ export default function SearchTab() {
         setTermDetails(null);
       } finally {
         setIsTermLoading(false);
+      }
+
+      try {
+        const disputes = await api.listTermDisputes({
+          termId: selectedService.id,
+          topK: 3,
+        });
+        setDisputeClauses(disputes?.clauses || []);
+      } catch (e) {
+        console.warn("Failed to load dispute analysis", e);
+        setDisputeClauses([]);
+      } finally {
+        setIsDisputeLoading(false);
       }
     };
     
@@ -74,6 +93,27 @@ export default function SearchTab() {
 
   const versions = getTermsVersions();
   const currentTermsVersion = versions[selectedVersionIndex] || null;
+  const riskyDisputeClauses = disputeClauses.filter(
+    (clause) =>
+      clause?.clause_risk_level ||
+      clause?.risk_reasoning ||
+      clause?.user_action ||
+      (clause?.matches && clause.matches.length > 0),
+  );
+
+  const getRiskBadgeClass = (riskLevel) => {
+    const normalized = (riskLevel || "").toLowerCase();
+    if (normalized.includes("high") || normalized.includes("높")) {
+      return "bg-red-50 text-red-600 border-red-100";
+    }
+    if (normalized.includes("medium") || normalized.includes("중")) {
+      return "bg-orange-50 text-orange-600 border-orange-100";
+    }
+    if (normalized.includes("low") || normalized.includes("낮")) {
+      return "bg-blue-50 text-blue-600 border-blue-100";
+    }
+    return "bg-gray-50 text-gray-600 border-gray-100";
+  };
 
   // 로컬 검색: 약관 조항(clauses)에서 관련 내용 찾기
   const localSearch = useCallback((query) => {
@@ -263,7 +303,7 @@ export default function SearchTab() {
   };
 
   return (
-    <div className="flex h-full gap-4 fade-in p-6 -mt-4 relative">
+    <div className="flex h-full min-h-0 gap-4 fade-in p-6 -mt-4 relative overflow-hidden">
       {showTooltip && (
         <div
           className="fixed z-[100] bg-gray-900 text-white px-3 py-2 rounded-xl text-sm shadow-xl flex items-center gap-1.5 cursor-pointer hover:bg-gray-800 transition-colors transform -translate-x-1/2 -translate-y-full"
@@ -277,7 +317,7 @@ export default function SearchTab() {
       )}
 
       {/* Left Sidebar */}
-      <div className="w-55 shrink-0 space-y-4 overflow-y-auto">
+      <div className="w-56 shrink-0 space-y-4 overflow-y-auto">
         <div className="bg-white rounded-2xl p-4 toss-card-shadow border border-gray-100">
           <div className="text-xs font-bold text-gray-400 mb-3 ml-1">
             📋 등록된 서비스
@@ -330,15 +370,15 @@ export default function SearchTab() {
       </div>
 
       {/* Main + Right Layout */}
-      <div className="flex-1 flex gap-4">
+      <div className="flex-1 min-w-0 flex gap-4 overflow-hidden">
         {/* Main Content */}
         {selectedService ? (
           isTermLoading ? (
-             <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
+             <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
               <p className="text-gray-400 animate-pulse">약관을 불러오는 중입니다...</p>
             </div>
           ) : currentTermsVersion ? (
-            <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
               <div className="border-b border-gray-100 p-6 bg-gradient-to-r from-blue-50 to-white">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {selectedService.name}
@@ -393,15 +433,115 @@ export default function SearchTab() {
                     {currentTermsVersion.content}
                   </div>
                 )}
+
+                <div className="mt-10 border-t border-gray-100 pt-8">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <p className="text-xs font-bold text-red-500 mb-1">
+                        분쟁 가능성 분석
+                      </p>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        분쟁이 발생할 확률이 높은 조항
+                      </h3>
+                    </div>
+                    {isDisputeLoading && (
+                      <span className="text-xs text-gray-400 animate-pulse">
+                        분석 중...
+                      </span>
+                    )}
+                  </div>
+
+                  {!isDisputeLoading && riskyDisputeClauses.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm text-gray-500">
+                      현재 표시할 분쟁 위험 조항이 없습니다.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {riskyDisputeClauses.map((clause) => (
+                        <article
+                          key={clause.clause_id}
+                          className="bg-white border border-gray-200 rounded-2xl p-5"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                              <h4 className="font-bold text-gray-900">
+                                {clause.clause_title || "제목 없는 조항"}
+                              </h4>
+                              {clause.clause_pain_point_id && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {clause.clause_pain_point_id}
+                                </p>
+                              )}
+                            </div>
+                            {clause.clause_risk_level && (
+                              <span
+                                className={`shrink-0 text-xs font-bold border rounded-full px-2.5 py-1 ${getRiskBadgeClass(
+                                  clause.clause_risk_level,
+                                )}`}
+                              >
+                                {clause.clause_risk_level}
+                              </span>
+                            )}
+                          </div>
+
+                          {clause.risk_reasoning && (
+                            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {clause.risk_reasoning}
+                            </p>
+                          )}
+                          {clause.user_action && (
+                            <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
+                              <span className="font-bold block mb-1">
+                                권장 확인 사항
+                              </span>
+                              {clause.user_action}
+                            </div>
+                          )}
+
+                          {clause.matches?.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              <p className="text-xs font-bold text-gray-400">
+                                유사 분쟁 사례
+                              </p>
+                              {clause.matches.map((match) => (
+                                <div
+                                  key={match.case_id}
+                                  className="rounded-xl bg-gray-50 border border-gray-100 p-3"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="text-sm font-semibold text-gray-800">
+                                      {match.title}
+                                    </p>
+                                    <span className="text-[11px] text-gray-400 shrink-0">
+                                      {(match.score * 100).toFixed(0)}%
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                    {match.summary}
+                                  </p>
+                                  {match.outcome && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                      결과: {match.outcome}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
+            <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
               <p className="text-gray-400">약관 내용이 없습니다.</p>
             </div>
           )
         ) : (
-          <div className="flex-1 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
+          <div className="flex-1 min-w-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex items-center justify-center">
             <div className="text-center">
               <p className="text-6xl mb-4">📄</p>
               <p className="text-gray-500 text-lg font-medium">서비스를 선택해주세요</p>
@@ -411,7 +551,7 @@ export default function SearchTab() {
         )}
 
         {/* Right Chat Sidebar */}
-        <div className="w-65 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
+        <div className="w-80 shrink-0 bg-white rounded-[32px] border border-gray-100 toss-shadow flex flex-col overflow-hidden">
           <div className="border-b border-gray-100 p-4 bg-gray-50 shrink-0">
             <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
               💬 약관 검색
@@ -423,7 +563,7 @@ export default function SearchTab() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {chatMessages.length === 0 && !isLoading ? (
               <div className="text-center text-gray-400 py-10">
                 <p className="text-3xl mb-3">🔍</p>
@@ -448,7 +588,7 @@ export default function SearchTab() {
                     }`}
                   >
                     <div
-                      className={`max-w-[90%] px-4 py-3 text-sm leading-relaxed ${
+                      className={`max-w-[90%] min-w-0 px-4 py-3 text-sm leading-relaxed break-words ${
                         msg.role === "user"
                           ? "bg-blue-500 text-white rounded-2xl rounded-br-none shadow-sm"
                           : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-none border border-gray-200 whitespace-pre-wrap"
@@ -507,7 +647,7 @@ export default function SearchTab() {
               <button
                 onClick={handleSendMessage}
                 disabled={!selectedService || !newMessage.trim() || isLoading || isTermLoading}
-                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-xl transition shadow-sm font-bold text-sm"
+                className="shrink-0 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-xl transition shadow-sm font-bold text-sm"
               >
                 검색
               </button>

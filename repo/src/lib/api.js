@@ -30,6 +30,11 @@ export const api = {
 
   getTerm: (termId) => request(`/terms/${termId}`),
 
+  listTermDisputes: ({ termId, topK = 3 }) =>
+    request(
+      `/v1/terms/${termId}/disputes?top_k=${encodeURIComponent(topK)}`,
+    ),
+
   uploadTerm: ({ serviceName, subscribedAt, file }) => {
     const formData = new FormData();
     formData.append("service_name", serviceName);

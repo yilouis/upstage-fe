@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useApp } from "../../AppContext";
 import { Menu, Bell, User, X } from "lucide-react";
+import logoImage from "./logo.png";
 
 export default function TopBar() {
   const {
@@ -41,9 +42,7 @@ export default function TopBar() {
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => setView("dashboard")}
         >
-          <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-            T
-          </div>
+          <img src={logoImage} alt="T-T 로고" className="w-10 h-10" />
           <span className="font-bold text-xl tracking-tight text-gray-800">
             T-T
           </span>
@@ -68,9 +67,9 @@ export default function TopBar() {
 
         {userOpen && (
           <div className="absolute top-12 right-0 w-64 bg-white rounded-2xl toss-shadow p-4 border border-gray-100 fade-in">
-            <div className="font-semibold text-lg">김토스</div>
+            <div className="font-semibold text-lg">김대웅</div>
             <div className="text-sm text-gray-500 mb-4">
-              toss@yonsei.ac.kr
+              yarrong@yonsei.ac.kr
             </div>
             <div className="border-t border-gray-100 pt-2">
               <button className="w-full text-left text-sm text-red-500 font-medium py-2 hover:bg-red-50 rounded-lg px-2">
