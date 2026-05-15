@@ -610,7 +610,7 @@ export default function SearchTab() {
                 <div className="mt-10 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-xs leading-relaxed text-amber-800">
-                    이 페이지의 요약·쉬운 해석·분쟁 가능성 분석은 모두 AI가 생성한 참고 자료입니다. 법적 효력이 없으며, 실제 권리·의무는 반드시 원문 약관과 관련 법령을 확인해주세요.
+                    이 페이지의 요약·해석·분쟁 가능성 분석은 원문 약관 및 공정거래위원회 심사 사례·판례 데이터를 기반으로 AI가 생성한 참고 자료입니다. 법적 효력이 없으며, 실제 권리·의무는 원문 약관과 관련 법령을 직접 확인해 주세요.
                   </p>
                 </div>
               </div>
