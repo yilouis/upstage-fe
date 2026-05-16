@@ -27,10 +27,12 @@ export default function DashboardTab() {
         (selectedSector === "전체" || s.sector === selectedSector),
     )
     .sort((a, b) => {
-      const categoryCmp = getDomainLabel(a.category).localeCompare(
-        getDomainLabel(b.category),
-        "ko-KR",
-      );
+      const labelA = getDomainLabel(a.category);
+      const labelB = getDomainLabel(b.category);
+      const aEtc = labelA === "기타";
+      const bEtc = labelB === "기타";
+      if (aEtc !== bEtc) return aEtc ? 1 : -1;
+      const categoryCmp = labelA.localeCompare(labelB, "ko-KR");
       if (categoryCmp !== 0) return categoryCmp;
       return (a.name || "").localeCompare(b.name || "", "ko-KR");
     });

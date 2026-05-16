@@ -18,9 +18,12 @@ export default function Sidebar() {
   const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
-  const sortedCategories = [...categories].sort((a, b) =>
-    (a.name || "").localeCompare(b.name || "", "ko-KR"),
-  );
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aEtc = a.name === "기타";
+    const bEtc = b.name === "기타";
+    if (aEtc !== bEtc) return aEtc ? 1 : -1;
+    return (a.name || "").localeCompare(b.name || "", "ko-KR");
+  });
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
