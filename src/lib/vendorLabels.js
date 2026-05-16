@@ -10,6 +10,8 @@ const VENDOR_DISPLAY_NAMES = {
   tving: "티빙",
   wavve: "웨이브",
   upstage: "업스테이지",
+  youtube: "유튜브",
+  twitch: "트위치",
 };
 
 export function getVendorDisplayName(service) {

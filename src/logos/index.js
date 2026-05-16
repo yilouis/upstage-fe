@@ -1,36 +1,17 @@
-import bankSalad from "./bank-salad.png";
-import chatgpt from "./chatgpt.jpg";
-import claude from "./claude.jpg";
-import coupangPlay from "./coupang-play.jpg";
-import deepseek from "./deepseek.jpg";
-import disneyPlus from "./disney-plus.jpg";
-import gemini from "./gemini.png";
-import kakaoPay from "./kakao-pay.jpg";
-import netflix from "./netflix.jpg";
-import spotify from "./spotify.jpg";
-import toss from "./toss.png";
-import tving from "./tving.jpg";
-import upstage from "./upstage.jpg";
-import watcha from "./watcha.png";
-import wavve from "./wavve.png";
+// Logo files are auto-discovered from this folder. To add a new service
+// logo, drop an image named after its vendor slug (e.g. "youtube.png" or
+// "twitch.png") into src/logos/ — no code change needed here.
+const logoModules = import.meta.glob("./*.{png,jpg,jpeg,svg,webp}", {
+  eager: true,
+  import: "default",
+});
 
-export const SERVICE_LOGOS = {
-  "bank-salad": bankSalad,
-  chatgpt,
-  claude,
-  "coupang-play": coupangPlay,
-  deepseek,
-  "disney-plus": disneyPlus,
-  gemini,
-  "kakao-pay": kakaoPay,
-  netflix,
-  spotify,
-  toss,
-  tving,
-  upstage,
-  watcha,
-  wavve,
-};
+export const SERVICE_LOGOS = Object.fromEntries(
+  Object.entries(logoModules).map(([path, url]) => {
+    const slug = path.replace(/^\.\//, "").replace(/\.[^.]+$/, "");
+    return [slug, url];
+  }),
+);
 
 const NAME_ALIASES = {
   // Korean / common variants → canonical slug
@@ -59,6 +40,11 @@ const NAME_ALIASES = {
   "제미니": "gemini",
   "웨이브": "wavve",
   "wavve": "wavve",
+  "유튜브": "youtube",
+  "유튜브 프리미엄": "youtube",
+  "유튜브프리미엄": "youtube",
+  "youtube premium": "youtube",
+  "트위치": "twitch",
 };
 
 const normalize = (raw) =>
