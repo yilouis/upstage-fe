@@ -161,7 +161,7 @@ export default function AddServiceModal({ onClose }) {
             <div className="relative">
               <input
                 type="text"
-                placeholder="예: 넷플릭스, 토스, DB손해보험"
+                placeholder="예: 넷플릭스, 토스, 업스테이지"
                 value={serviceName}
                 onFocus={() => {
                   if (!serviceName) {
