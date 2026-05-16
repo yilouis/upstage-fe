@@ -18,6 +18,10 @@ export default function Sidebar() {
   const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
+  const sortedCategories = [...categories].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "", "ko-KR"),
+  );
+
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
       const newCategory = addCategory(newCategoryName);
@@ -43,7 +47,7 @@ export default function Sidebar() {
             나의 서비스
           </div>
           <ul className="space-y-1">
-            {categories.map((c) => (
+            {sortedCategories.map((c) => (
               <li
                 key={c.id}
                 onClick={() => {

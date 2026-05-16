@@ -26,7 +26,14 @@ export default function DashboardTab() {
         (!selectedCategory || s.category === selectedCategory) &&
         (selectedSector === "전체" || s.sector === selectedSector),
     )
-    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"));
+    .sort((a, b) => {
+      const categoryCmp = getDomainLabel(a.category).localeCompare(
+        getDomainLabel(b.category),
+        "ko-KR",
+      );
+      if (categoryCmp !== 0) return categoryCmp;
+      return (a.name || "").localeCompare(b.name || "", "ko-KR");
+    });
 
   return (
     <>
