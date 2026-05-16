@@ -14,9 +14,26 @@ const VENDOR_DISPLAY_NAMES = {
   twitch: "트위치",
 };
 
+// Lowercased brand-name variants → canonical slug. Used as a fallback when
+// the backend did not provide a vendor_slug for the term.
+const NAME_TO_SLUG = {
+  youtube: "youtube",
+  "youtube premium": "youtube",
+  "유튜브": "youtube",
+  "유튜브 프리미엄": "youtube",
+  twitch: "twitch",
+  "트위치": "twitch",
+};
+
 export function getVendorDisplayName(service) {
   if (!service) return "";
   const slug = (service.vendor_slug || "").toLowerCase();
   if (slug && VENDOR_DISPLAY_NAMES[slug]) return VENDOR_DISPLAY_NAMES[slug];
-  return service.name || service.service_name || "";
+
+  const rawName = service.name || service.service_name || "";
+  const nameSlug = NAME_TO_SLUG[rawName.toLowerCase().trim()];
+  if (nameSlug && VENDOR_DISPLAY_NAMES[nameSlug]) {
+    return VENDOR_DISPLAY_NAMES[nameSlug];
+  }
+  return rawName;
 }
